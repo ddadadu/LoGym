@@ -4,8 +4,8 @@ export default function Login() {
   const handleLogin = async (provider) => {
     try {
       const options = {
-        // 로컬 개발 환경(localhost:5173)이나 추후 배포 주소로 다시 돌아오도록 설정
-        redirectTo: window.location.origin
+        // 소셜 로그인 후 역할 선택화면으로 리다이렉트
+        redirectTo: window.location.origin + '/role-select'
       }
 
       // Supabase OAuth 로그인 호출
