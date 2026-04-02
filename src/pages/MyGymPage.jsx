@@ -4,6 +4,23 @@ import { Map, CustomOverlayMap, useKakaoLoader } from 'react-kakao-maps-sdk'
 import { MapPin, Search, Dumbbell, LocateFixed, XCircle } from 'lucide-react'
 import { supabase } from '../supabaseClient'
 
+// 두 위경도 좌표 간의 거리(m)를 구면 반경 기준으로 계산하는 함수 (Haversine Formula)
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  const R = 6371e3; // 지구 반경 (m)
+  const toRad = value => value * Math.PI / 180;
+  const phi1 = toRad(lat1);
+  const phi2 = toRad(lat2);
+  const deltaPhi = toRad(lat2 - lat1);
+  const deltaLambda = toRad(lon2 - lon1);
+
+  const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+    Math.cos(phi1) * Math.cos(phi2) *
+    Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+};
+
 export default function MyGymPage() {
   const navigate = useNavigate();
   const [loading, error] = useKakaoLoader({
@@ -42,7 +59,7 @@ export default function MyGymPage() {
           .select('home_gym_id, gyms(kakao_place_id)')
           .eq('id', user.id)
           .single()
-          
+
         if (!userError && userData?.gyms?.kakao_place_id) {
           setMyGymId(userData.gyms.kakao_place_id)
         }
@@ -54,7 +71,7 @@ export default function MyGymPage() {
   // 2. 주변 검색
   useEffect(() => {
     if (loading || error || !window.kakao || !window.kakao.maps.services) return
-    if (keyword) return 
+    if (keyword) return
 
     const ps = new window.kakao.maps.services.Places()
     const searchOption = {
@@ -123,30 +140,30 @@ export default function MyGymPage() {
       if (map) map.panTo(new window.kakao.maps.LatLng(center.lat, center.lng));
       return;
     }
-    
+
     setKeyword(searchInput.trim());
     setSelectedGym(null);
     if (!window.kakao || !window.kakao.maps.services) return;
-    
+
     const ps = new window.kakao.maps.services.Places();
-    const formattedKeyword = 
-      searchInput.includes('헬스') || searchInput.includes('짐') || searchInput.includes('피트니스') 
-        ? searchInput 
+    const formattedKeyword =
+      searchInput.includes('헬스') || searchInput.includes('짐') || searchInput.includes('피트니스')
+        ? searchInput
         : `${searchInput} 헬스장`;
 
     let collectedPlaces = [];
-    
+
     const placesSearchCB = (data, status, pagination) => {
       if (status === window.kakao.maps.services.Status.OK) {
         collectedPlaces = [...collectedPlaces, ...data];
-        
+
         if (pagination.hasNextPage && collectedPlaces.length < 50) {
           pagination.nextPage();
         } else {
           const finalData = collectedPlaces.slice(0, 50);
           setPlaces(finalData);
           setIsListExpanded(true);
-          
+
           if (map && finalData.length > 0) {
             const bounds = new window.kakao.maps.LatLngBounds();
             finalData.slice(0, 15).forEach(place => bounds.extend(new window.kakao.maps.LatLng(place.y, place.x)));
@@ -158,7 +175,7 @@ export default function MyGymPage() {
         setPlaces([]);
       }
     };
-    
+
     ps.keywordSearch(formattedKeyword, placesSearchCB);
   };
 
@@ -168,7 +185,7 @@ export default function MyGymPage() {
       alert('로그인이 필요한 기능입니다.');
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
       // DB STEP 1: 해당 헬스장을 우리 점포 마스터(gyms) 테이블에 존재하는지 확인 후 업서트(없으면 생성)
@@ -199,8 +216,8 @@ export default function MyGymPage() {
       // 만약 아직 users 테이블에 내 로우(행)가 아예 생성조차 안 되어있다면? (업데이트 실패)
       if (updatedUsers.length === 0) {
         // 카카오/구글 소셜 로그인 정보에서 이름을 꺼내 임시 username으로 넣고 최초 생성(insert) 처리
-        const defaultName = currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || `회원_${currentUser.id.substring(0,5)}`;
-        
+        const defaultName = currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || `회원_${currentUser.id.substring(0, 5)}`;
+
         const { error: insertError } = await supabase
           .from('users')
           .insert({
@@ -208,7 +225,7 @@ export default function MyGymPage() {
             home_gym_id: gymData.id,
             username: defaultName // NOT NULL 제약조건 통과를 위한 닉네임 자동생성
           });
-          
+
         if (insertError) throw insertError;
       }
 
@@ -234,11 +251,10 @@ export default function MyGymPage() {
   return (
     <div className="absolute inset-0 flex flex-col overflow-hidden bg-[#f9fafb]">
       {/* 상단 맵 공간 */}
-      <div 
+      <div
         id="map-container"
-        className={`relative w-full shrink-0 transition-[height] duration-500 ease-in-out ${
-          isListExpanded ? 'h-[40vh]' : 'h-[calc(100vh-150px)]'
-        }`}
+        className={`relative w-full shrink-0 transition-[height] duration-500 ease-in-out ${isListExpanded ? 'h-[40vh]' : 'h-[calc(100vh-150px)]'
+          }`}
       >
         <Map
           center={center}
@@ -253,7 +269,7 @@ export default function MyGymPage() {
               <span className="relative inline-flex h-4 w-4 rounded-full bg-[#3182f6] border-2 border-white shadow-md"></span>
             </div>
           </CustomOverlayMap>
-          
+
           {places.map((place) => {
             const isSelected = selectedGym?.id === place.id;
             const isMyGym = myGymId === place.id; // 선택상관 없이 내 헬스장 마커면 표시
@@ -263,12 +279,12 @@ export default function MyGymPage() {
                 position={{ lat: place.y, lng: place.x }}
                 clickable={true}
               >
-                <div 
+                <div
                   className={`flex h-[42px] w-[42px] cursor-pointer items-center justify-center rounded-full shadow-lg transition-all ${
                     // 이미 내 헬스장인 곳은 황금색(또는 진한색 별도 강조)
                     isMyGym && !isSelected ? 'bg-[#191f28] ring-2 ring-[#faca15]' :
-                    isSelected ? 'bg-[#1b64da] scale-110 ring-4 ring-[#3182f6]/30' : 'bg-[#3182f6] hover:scale-105 ring-2 ring-white'
-                  }`}
+                      isSelected ? 'bg-[#1b64da] scale-110 ring-4 ring-[#3182f6]/30' : 'bg-[#3182f6] hover:scale-105 ring-2 ring-white'
+                    }`}
                   onClick={() => {
                     setSelectedGym(place);
                     setIsListExpanded(true);
@@ -283,13 +299,13 @@ export default function MyGymPage() {
           })}
         </Map>
 
-        <button 
+        <button
           onClick={() => {
             if (map && myLocation) {
-               map.panTo(new window.kakao.maps.LatLng(myLocation.lat, myLocation.lng))
-               setCenter(myLocation)
+              map.panTo(new window.kakao.maps.LatLng(myLocation.lat, myLocation.lng))
+              setCenter(myLocation)
             } else {
-               fetchMyLocation()
+              fetchMyLocation()
             }
           }}
           className="absolute right-4 top-20 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl border border-[#e5e8eb]/50 bg-white text-[#3182f6] shadow-md transition-transform active:scale-95"
@@ -298,24 +314,24 @@ export default function MyGymPage() {
           <LocateFixed className="h-5 w-5" strokeWidth={2.5} />
         </button>
 
-        <form 
+        <form
           onSubmit={handleSearch}
           className="absolute left-4 right-4 top-4 z-10 flex items-center rounded-2xl border border-[#e5e8eb]/50 bg-white px-4 py-3 shadow-lg"
         >
           <Search className="h-5 w-5 text-[#8b95a1]" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="상호명 또는 지역 검색 (예: 공덕역 헬스장)" 
+            placeholder="상호명 또는 지역 검색 (예: 공덕역 헬스장)"
             className="ml-3 flex-1 bg-transparent text-[15px] font-medium text-[#191f28] placeholder-[#8b95a1] outline-none"
           />
           {searchInput && (
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => {
                 setSearchInput('');
-                setKeyword(''); 
+                setKeyword('');
               }}
               className="ml-2 flex h-6 w-6 cursor-pointer items-center justify-center text-[#8b95a1] hover:text-[#191f28]"
             >
@@ -327,7 +343,7 @@ export default function MyGymPage() {
 
       {/* 하단 리스트 영역 */}
       <div className="relative z-10 -mt-6 flex flex-1 flex-col overflow-hidden rounded-t-3xl bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
-        <div 
+        <div
           className="cursor-pointer shrink-0 bg-white px-5 pb-3 pt-4"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -336,7 +352,7 @@ export default function MyGymPage() {
           <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-[#e5e8eb]"></div>
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-extrabold text-[#191f28]">
-              {keyword ? '검색 결과' : '주변 헬스장'} 
+              {keyword ? '검색 결과' : '주변 헬스장'}
               <span className="ml-1 text-[#3182f6]">{places.length}</span>
             </h2>
           </div>
@@ -354,24 +370,29 @@ export default function MyGymPage() {
                 const isSelected = selectedGym?.id === place.id;
                 const isMyGym = myGymId === place.id;
 
+                // 내 위치(myLocation) 기준으로 마커와의 실제 직선 거리 재계산
+                const calcDistance = calculateDistance(myLocation?.lat, myLocation?.lng, place.y, place.x);
+                const displayDistance = calcDistance !== null
+                  ? (calcDistance >= 1000 ? `${(calcDistance / 1000).toFixed(1)}km` : `${calcDistance}m`)
+                  : (place.distance ? `${place.distance}m` : '위치 검색');
+
                 return (
-                  <div 
+                  <div
                     key={place.id}
                     onClick={() => {
                       setSelectedGym(place);
                       if (map) map.panTo(new window.kakao.maps.LatLng(place.y, place.x));
                     }}
-                    className={`flex cursor-pointer flex-col overflow-hidden rounded-2xl border transition-all ${
-                      isSelected 
-                        ? 'border-[#3182f6] bg-[#3182f6]/5 shadow-sm ring-1 ring-[#3182f6]' 
+                    className={`flex cursor-pointer flex-col overflow-hidden rounded-2xl border transition-all ${isSelected
+                        ? 'border-[#3182f6] bg-[#3182f6]/5 shadow-sm ring-1 ring-[#3182f6]'
                         : (isMyGym ? 'border-[#191f28]/10 bg-[#f9fafb]' : 'border-[#e5e8eb] bg-white hover:bg-gray-50')
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between p-4">
                       <div className="flex-1">
                         <div className="mb-1.5 flex items-center gap-2">
                           <span className="rounded bg-[#f2f4f6] px-1.5 py-0.5 text-[10px] font-bold text-[#8b95a1]">
-                            {place.distance ? `${place.distance}m` : '위치 검색'}
+                            {displayDistance}
                           </span>
                           {isMyGym && (
                             <span className="rounded bg-[#191f28] px-1.5 py-0.5 text-[10px] font-bold text-[#faca15]">
@@ -388,26 +409,25 @@ export default function MyGymPage() {
                         </div>
                       )}
                     </div>
-                    
+
                     {isSelected && (
                       <div className="animate-in slide-in-from-top-2 border-t border-[#3182f6]/10 px-4 py-3">
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
                             if (isMyGym) navigate('/mygym/info');
-                            else handleRegisterGym(place); 
+                            else handleRegisterGym(place);
                           }}
                           disabled={(!isMyGym && isSubmitting)}
-                          className={`w-full rounded-xl py-3.5 text-sm font-bold text-white shadow-sm outline-none border-none transition-transform ${
-                            isMyGym 
-                              ? 'bg-[#191f28] hover:bg-black active:scale-[0.98]' 
+                          className={`w-full rounded-xl py-3.5 text-sm font-bold text-white shadow-sm outline-none border-none transition-transform ${isMyGym
+                              ? 'bg-[#191f28] hover:bg-black active:scale-[0.98]'
                               : 'bg-[#3182f6] hover:bg-blue-600 active:scale-[0.98]'
-                          }`}
+                            }`}
                         >
-                          {isMyGym 
-                            ? '내 헬스장 상세 정보 보기' 
-                            : isSubmitting 
-                              ? '등록 통신 중...' 
+                          {isMyGym
+                            ? '내 헬스장 상세 정보 보기'
+                            : isSubmitting
+                              ? '등록 통신 중...'
                               : (myGymId ? '이 헬스장으로 변경하기' : "이곳을 '내 헬스장'으로 등록")
                           }
                         </button>

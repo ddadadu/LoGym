@@ -1,15 +1,102 @@
-import { Flame, Target, Trophy, CalendarDays, CheckCircle2 } from 'lucide-react'
+import { Flame, Target, Trophy, CalendarDays, CheckCircle2, Image as ImageIcon } from 'lucide-react'
 import PullToRefreshWrapper from '../components/PullToRefreshWrapper'
+import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { supabase } from '../supabaseClient'
 
 export default function HomePage() {
-  // 백엔드 연결 전 UI 확인을 위한 Mock(가짜) 데이터
-  const dashboardData = {
-    todayCompleted: false, // 오늘 운동 완료 여부
-    weeklyGoal: 4,         // 이번 주 목표 횟수
-    weeklyCurrent: 2,      // 이번 주 달성 횟수
-    currentStreak: 5,      // 연속 출석 일수
-    thisMonthCount: 12,    // 이번 달 출석 누적
-  }
+  const navigate = useNavigate();
+  const [currentUser, setCurrentUser] = useState(null);
+  const [recentLogs, setRecentLogs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  // 기존의 Mock 데이터 (향후 주간/월간 등도 DB 연동 예정)
+  const [dashboardData, setDashboardData] = useState({
+    todayCompleted: false,
+    weeklyGoal: 4,
+    weeklyCurrent: 2,
+    currentStreak: 5,
+    thisMonthCount: 12,
+  });
+
+  // DB에서 최근 3일 치 조회
+  const fetchRecentLogs = async (user) => {
+    try {
+      setIsLoading(true);
+      
+      const today = new Date();
+      // 시간대를 로컬(한국시간) 기준으로 yyyy-mm-dd 파싱
+      const formatDate = (d) => {
+        const offset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - offset).toISOString().split('T')[0];
+      };
+      
+      const todayStr = formatDate(today);
+      const threeDaysAgoStr = formatDate(new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000));
+
+      const { data, error } = await supabase
+        .from('workout_logs')
+        .select(`
+          *,
+          workout_log_items (
+            equipment_id,
+            custom_exercise_id,
+            equipments ( name ),
+            user_custom_exercises ( name )
+          )
+        `)
+        .eq('user_id', user.id)
+        .gte('date', threeDaysAgoStr)
+        .lte('date', todayStr)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      
+      // 3일치 기본 틀 생성 (어제, 그저께 등 데이터가 없으면 휴식으로 처리)
+      const baseDays = [
+        { label: '오늘', dateVal: todayStr },
+        { label: '어제', dateVal: formatDate(new Date(today.getTime() - 1 * 24 * 60 * 60 * 1000)) },
+        { label: '그저께', dateVal: threeDaysAgoStr },
+      ];
+      
+      const mappedLogs = baseDays.map(bd => {
+        const found = data?.find(d => d.date === bd.dateVal);
+        if (!found) return { ...bd, hasData: false };
+        
+        // 종목명 추출 (최대 3개 정도만 보여주고 외 X개)
+        const exerciseNames = found.workout_log_items.map(item => 
+          item.equipments?.name || item.user_custom_exercises?.name || '알 수 없는 운동'
+        );
+        const uniqueNames = [...new Set(exerciseNames)];
+        
+        return {
+          ...bd,
+          hasData: true,
+          duration: found.duration_seconds,
+          photo_url: found.photo_url,
+          exercises: uniqueNames
+        };
+      });
+
+      setRecentLogs(mappedLogs);
+      
+      // 오늘 목표 갱신
+      setDashboardData(prev => ({ ...prev, todayCompleted: mappedLogs[0].hasData }));
+
+    } catch (err) {
+      console.error("Fetch home logs error", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setCurrentUser(user);
+        fetchRecentLogs(user);
+      }
+    });
+  }, []);
 
   return (
     <PullToRefreshWrapper onRefresh={async () => console.log('피드 리프레시')}>
@@ -36,6 +123,11 @@ export default function HomePage() {
             )}
           </div>
           <button 
+            onClick={() => {
+              if (!dashboardData.todayCompleted) {
+                navigate('/workout', { state: { autoStart: true } });
+              }
+            }}
             className={`w-full rounded-xl py-3.5 font-bold transition-transform active:scale-[0.98] ${
               dashboardData.todayCompleted 
                 ? 'cursor-not-allowed bg-[#f2f4f6] text-[#8b95a1]' 
@@ -48,7 +140,6 @@ export default function HomePage() {
 
         {/* 주간 및 월간 기록 요약 (그리드) */}
         <div className="grid grid-cols-2 gap-4">
-          
           {/* 연속일수 (Streak) */}
           <div className="flex flex-col justify-center rounded-2xl border border-[#e5e8eb] bg-white p-5 shadow-sm">
             <div className="mb-2 flex items-center gap-2 text-[#8b95a1]">
@@ -77,20 +168,53 @@ export default function HomePage() {
             </p>
           </div>
           
-          {/* 이번달 성과 */}
-          <div className="col-span-2 flex items-center justify-between rounded-2xl border border-[#e5e8eb] bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#3182f6]/10">
-                <CalendarDays className="h-5 w-5 text-[#3182f6]" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-[#8b95a1]">이번달 로짐 출석</p>
-                <p className="text-lg font-extrabold text-[#191f28]">{dashboardData.thisMonthCount}회</p>
-              </div>
+          {/* 최근 3일 요약 (NEW) */}
+          <div className="col-span-2 rounded-2xl border border-[#e5e8eb] bg-white p-5 shadow-sm">
+            <h3 className="text-lg font-bold text-[#191f28] mb-4">최근 운동</h3>
+            <div className="space-y-3">
+              {isLoading ? (
+                <div className="animate-pulse text-center text-sm font-bold text-[#8b95a1] py-4">
+                  기록을 불러오는 중...
+                </div>
+              ) : (
+                recentLogs.map((log, i) => (
+                  <div key={i} className="flex gap-3 items-center border border-[#f2f4f6] rounded-xl p-3 bg-[#f9fafb]">
+                    <div className="flex-1">
+                      <p className="text-[13px] font-bold text-[#8b95a1] mb-1">{log.label} <span className="font-medium text-[#b0b8c1] ml-1">{log.dateVal.slice(5)}</span></p>
+                      {log.hasData ? (
+                        <>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[14px] font-extrabold text-[#191f28]">완료!</span>
+                            <span className="text-[12px] font-bold text-[#3182f6] bg-[#e8f3ff] px-1.5 py-0.5 rounded-md">
+                              {Math.floor(log.duration / 60)}분 {log.duration % 60}초
+                            </span>
+                          </div>
+                          <p className="text-[12px] text-[#4e5968] font-medium line-clamp-1">
+                            {log.exercises.length > 2 
+                              ? `${log.exercises[0]}, ${log.exercises[1]} 외 ${log.exercises.length - 2}개` 
+                              : log.exercises.join(', ')}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-[14px] font-extrabold text-[#b0b8c1] mt-1">휴식 🍃</p>
+                      )}
+                    </div>
+                    {/* 우측 썸네일 */}
+                    {log.hasData && log.photo_url ? (
+                      <div className="w-16 h-16 rounded-xl bg-white shadow-sm border border-[#e5e8eb] overflow-hidden shrink-0">
+                        <img src={log.photo_url} alt="오운완" className="w-full h-full object-cover" />
+                      </div>
+                    ) : (log.hasData && !log.photo_url && (
+                      <div className="w-16 h-16 rounded-xl bg-white shadow-sm border border-[#e5e8eb] flex items-center justify-center shrink-0">
+                        <ImageIcon className="w-6 h-6 text-[#d1d6db]" />
+                      </div>
+                    ))}
+                  </div>
+                ))
+              )}
             </div>
-            <Trophy className="h-8 w-8 text-[#faca15] opacity-30" />
           </div>
-
+          
         </div>
       </div>
     </PullToRefreshWrapper>
