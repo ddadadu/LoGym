@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Map, CustomOverlayMap, useKakaoLoader } from 'react-kakao-maps-sdk'
 import { MapPin, Search, Dumbbell, LocateFixed, XCircle } from 'lucide-react'
 import { supabase } from '../supabaseClient'
@@ -23,6 +23,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 export default function MyGymPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_MAP_API_KEY,
     libraries: ['services', 'clusterer'],
@@ -62,11 +63,18 @@ export default function MyGymPage() {
 
         if (!userError && userData?.gyms?.kakao_place_id) {
           setMyGymId(userData.gyms.kakao_place_id)
+          
+          // 강제 변경(?change=true) 파라미터가 없으면 즉시 내 헬스장 상세 페이지로 이동
+          const queryParams = new URLSearchParams(location.search);
+          if (queryParams.get('change') !== 'true') {
+            navigate('/mygym/info', { replace: true });
+            return;
+          }
         }
       }
     }
     fetchUserProfile()
-  }, [])
+  }, [navigate, location])
 
   // 2. 주변 검색
   useEffect(() => {

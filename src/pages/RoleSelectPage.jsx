@@ -107,7 +107,8 @@ export default function RoleSelectPage() {
         id: currentUser.id,
         username: username,
         full_name: fullName.trim(), // 새로 추가해야 할 non-unique 속성
-        is_manager: isManager
+        is_manager: isManager,
+        email: currentUser.email || null // 소셜 로그인 이메일 연동
       })
       
     setIsSubmitting(false)
@@ -138,7 +139,22 @@ export default function RoleSelectPage() {
         <p className="text-[#8b95a1]">LoGym에서 사용할 프로필을 만들어 주세요</p>
       </div>
 
-      <div className="w-full max-w-sm space-y-4 rounded-3xl bg-white p-6 shadow-sm border border-[#e5e8eb]">
+      <div className="w-full max-w-sm space-y-4 rounded-[24px] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[#e5e8eb]">
+        {/* 읽기 전용 이메일 필드 (소셜 가입자 확인용) */}
+        {currentUser?.email && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#8b95a1] ml-1">
+              이메일 계정 (수정 불가)
+            </label>
+            <input 
+              type="email"
+              readOnly
+              value={currentUser.email}
+              className="w-full rounded-2xl border border-[#e5e8eb] bg-[#f2f4f6] py-3.5 px-4 text-[15px] font-bold text-[#8b95a1] outline-none cursor-not-allowed"
+            />
+          </div>
+        )}
+
         {/* 고유 ID (username) 입력란 */}
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-[#8b95a1] ml-1">
@@ -192,7 +208,7 @@ export default function RoleSelectPage() {
         <button
           onClick={() => selectRole('user')}
           disabled={!usernameValid || !fullName.trim() || isSubmitting}
-          className="flex w-full items-center gap-4 rounded-2xl bg-white p-5 shadow-sm transition-all active:scale-[0.98] border border-[#e5e8eb] disabled:opacity-50 disabled:active:scale-100"
+          className="flex w-full items-center gap-4 rounded-[20px] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all active:scale-[0.98] border border-[#e5e8eb] disabled:opacity-50 disabled:active:scale-100"
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#3182f6]/10 text-[#3182f6] shadow-sm">
             <User className="h-6 w-6" />
@@ -207,7 +223,7 @@ export default function RoleSelectPage() {
         <button
           onClick={() => selectRole('manager')}
           disabled={!usernameValid || !fullName.trim() || isSubmitting}
-          className="flex w-full items-center gap-4 rounded-2xl bg-[#191f28] p-5 shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+          className="flex w-full items-center gap-4 rounded-[20px] bg-[#191f28] p-5 shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
         >
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-white shadow-sm">
             <Building2 className="h-6 w-6" />

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { ChevronLeft, Dumbbell, MapPin, Clock, UserCheck, ClipboardList, CheckCircle2, XCircle, AlertCircle, Phone, CheckSquare } from 'lucide-react';
+import { ChevronLeft, Dumbbell, MapPin, Clock, UserCheck, ClipboardList, CheckCircle2, XCircle, AlertCircle, Phone, CheckSquare, RefreshCw } from 'lucide-react';
 
 const CONDITION_LABELS = {
   excellent: { label: '양호', color: '#00c471', bg: '#e8faf0' },
@@ -116,11 +116,20 @@ export default function MyGymDetailPage() {
 
   return (
     <div className="min-h-[100dvh] pb-24 bg-[#f7f8fa] font-sans">
-      <header className="flex h-14 items-center px-4 bg-white shadow-sm shrink-0 sticky top-0 z-40">
-        <button onClick={() => navigate('/mygym')} className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors">
-          <ChevronLeft className="w-6 h-6 text-[#191f28]" />
+      <header className="flex h-14 items-center justify-between px-4 bg-white shadow-sm shrink-0 sticky top-0 z-40">
+        <div className="flex items-center">
+          <button onClick={() => navigate('/mygym?change=true')} className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors">
+            <ChevronLeft className="w-6 h-6 text-[#191f28]" />
+          </button>
+          <h1 className="text-[17px] font-bold text-[#191f28] ml-1">내 헬스장 정보</h1>
+        </div>
+        <button 
+          onClick={() => navigate('/mygym?change=true')} 
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f2f4f6] text-[#4e5968] rounded-lg text-[13px] font-bold hover:bg-[#e5e8eb] active:scale-95 transition-all"
+        >
+          <RefreshCw className="w-3.5 h-3.5 text-[#8b95a1]" strokeWidth={2.5} />
+          점포 변경
         </button>
-        <h1 className="text-[17px] font-bold text-[#191f28] ml-1">내 헬스장 정보</h1>
       </header>
 
       {/* Hero Section */}

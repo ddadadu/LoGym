@@ -8,6 +8,7 @@ import PullToRefreshWrapper from '../components/PullToRefreshWrapper';
 import useStopwatch from '../hooks/useStopwatch';
 import WorkoutExerciseSelectModal from './workout/WorkoutExerciseSelectModal';
 import WorkoutFinishModal from './workout/WorkoutFinishModal';
+import MuscleMap from '../components/workout/MuscleMap';
 import { supabase } from '../supabaseClient';
 import { useLocation } from 'react-router-dom';
 
@@ -342,9 +343,12 @@ export default function WorkoutPage() {
           // =======================
           <div className="p-4 space-y-4 animate-in fade-in slide-in-from-bottom-2">
             
+            {/* 근육 자극 맵 (신규) */}
+            <MuscleMap targetMuscles={activeExercises.map(ex => ex.category).filter((v, i, a) => a.indexOf(v) === i)} />
+
             <div className="space-y-4">
               {activeExercises.map((ex, exIdx) => (
-                <div key={ex.id} className="bg-white rounded-2xl shadow-sm border border-[#e5e8eb] overflow-hidden">
+                <div key={ex.id} className="bg-white rounded-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[#e5e8eb] overflow-hidden">
                   {/* 종목별 헤더 */}
                   <div className="px-4 py-3 border-b border-[#f2f4f6] flex justify-between items-center bg-[#f9fafb]">
                     <div className="flex items-center gap-2">
@@ -426,7 +430,7 @@ export default function WorkoutPage() {
 
             {/* 텅 빈 상태 */}
             {activeExercises.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16 text-[#8b95a1] bg-white rounded-2xl border border-dashed border-[#d1d6db]">
+              <div className="flex flex-col items-center justify-center py-16 text-[#8b95a1] bg-white rounded-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-dashed border-[#d1d6db]">
                 <Dumbbell className="w-12 h-12 mb-3 opacity-20" />
                 <p className="text-[15px] font-bold text-[#4e5968] mb-1">아직 추가된 운동이 없습니다</p>
                 <p className="text-[13px]">아래 버튼을 눌러 운동을 시작하세요.</p>
@@ -460,7 +464,7 @@ export default function WorkoutPage() {
             </button>
 
             {/* 캘린더 (출석) */}
-            <div className="rounded-2xl border border-[#e5e8eb] bg-white p-4 shadow-sm flex flex-col items-center">
+            <div className="rounded-[24px] border border-[#e5e8eb] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col items-center">
               <h3 className="w-full text-left text-lg font-bold text-[#191f28] mb-2 pl-2">출석 달력</h3>
               <style>{`
                 .rdp { --rdp-cell-size: 40px; --rdp-accent-color: #3182f6; --rdp-background-color: #e8f3ff; margin: 0; }
@@ -479,7 +483,7 @@ export default function WorkoutPage() {
             </div>
             
             {/* 선택된 날짜의 운동 브리핑 카드 */}
-            <div className="rounded-2xl border border-[#e5e8eb] bg-white p-5 shadow-sm overflow-hidden">
+            <div className="rounded-[24px] border border-[#e5e8eb] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
               <h3 className="text-lg font-bold text-[#191f28] mb-4">
                 {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일의 운동
               </h3>
@@ -547,7 +551,7 @@ export default function WorkoutPage() {
             </div>
 
             {/* 체중 변화 그래프 */}
-            <div className="rounded-2xl border border-[#e5e8eb] bg-white p-5 shadow-sm">
+            <div className="rounded-[24px] border border-[#e5e8eb] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <h3 className="text-lg font-bold text-[#191f28] mb-4">최근 체중 변화</h3>
               <div className="h-48 w-full text-xs">
                 <ResponsiveContainer width="100%" height="100%">
