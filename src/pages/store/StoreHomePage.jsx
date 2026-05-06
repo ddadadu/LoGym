@@ -15,6 +15,8 @@ export default function StoreHomePage() {
     trainerCount: 0,
   });
   const [recentNotices, setRecentNotices] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -45,7 +47,7 @@ export default function StoreHomePage() {
         .select('*')
         .eq('gym_id', profile.home_gym_id)
         .order('created_at', { ascending: false })
-        .limit(4);
+        .limit(20);
 
       setStats({
         totalMembers: memberCount || 0,
@@ -53,14 +55,28 @@ export default function StoreHomePage() {
         trainerCount: trainerCount || 0,
       });
 
+      const savedDismissed = localStorage.getItem(`dismissed_notices_${profile.home_gym_id}`);
+      const parsedDismissed = savedDismissed ? JSON.parse(savedDismissed) : [];
+      setDismissedIds(parsedDismissed);
+
       if (requests) {
-        setRecentNotices(requests.map(req => ({
-          id: req.id,
-          type: req.request_type || '정보',
-          text: req.status === 'pending' ? '새로운 헬스장 제보가 접수되었습니다' : '제보 처리가 완료되었습니다',
-          date: new Date(req.created_at).toLocaleDateString(),
-          dot: req.status === 'pending' ? '#f59e0b' : '#00c471',
-        })));
+        setRecentNotices(requests.map(req => {
+          const p = req.request_payload || {};
+          let statusText = '상태변경';
+          if (p.condition === 'maintenance') statusText = '고장/수리요청';
+          else if (p.condition === 'excellent') statusText = '새 입고됨';
+          else if (req.status === 'approved') statusText = '처리 완료됨';
+          else if (req.status === 'rejected') statusText = '반려됨';
+          
+          return {
+            id: req.id,
+            type: req.request_type || '회원제보',
+            text: `"${p.name || req.equipment_name || '알 수 없는 기구'} - ${statusText}"`,
+            date: new Date(req.created_at).toLocaleDateString(),
+            dot: req.status === 'pending' ? '#f59e0b' : '#00c471',
+            rawStatus: req.status
+          };
+        }));
       }
 
       setIsLoading(false);
@@ -78,6 +94,14 @@ export default function StoreHomePage() {
   }
 
   const gym = profile?.gyms || {};
+  const activeNotices = recentNotices.filter(n => !dismissedIds.includes(n.id));
+
+  const handleDismiss = (id, e) => {
+    e.stopPropagation();
+    const newDismissed = [...dismissedIds, id];
+    setDismissedIds(newDismissed);
+    localStorage.setItem(`dismissed_notices_${profile.home_gym_id}`, JSON.stringify(newDismissed));
+  };
 
   return (
     <div className="min-h-full pb-8">
@@ -95,9 +119,12 @@ export default function StoreHomePage() {
                 <span className="text-[12px] text-[#8b95a1] truncate max-w-[200px] sm:max-w-xs">{gym.address}</span>
               </div>
             </div>
-            <button className="w-10 h-10 rounded-full bg-[#f2f4f6] flex items-center justify-center relative hover:bg-[#e8eaed] transition-colors">
+            <button 
+              onClick={() => setShowNotifications(true)}
+              className="w-10 h-10 rounded-full bg-[#f2f4f6] flex items-center justify-center relative hover:bg-[#e8eaed] transition-colors"
+            >
               <Bell className="w-5 h-5 text-[#4e5968]" strokeWidth={1.8} />
-              {recentNotices.some(n => n.dot === '#f59e0b') && (
+              {activeNotices.some(n => n.rawStatus === 'pending') && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#f04452] border border-white" />
               )}
             </button>
@@ -213,12 +240,12 @@ export default function StoreHomePage() {
             <button onClick={() => navigate('/store/requests')} className="text-[13px] text-[#8b95a1] hover:text-[#4e5968] transition-colors">전체 요청 보기</button>
           </div>
           <div className="pb-2">
-            {recentNotices.length > 0 ? recentNotices.map((notice, idx) => (
+            {activeNotices.slice(0, 4).length > 0 ? activeNotices.slice(0, 4).map((notice, idx) => (
               <button
                 key={notice.id}
                 onClick={() => navigate('/store/requests')}
                 className={`w-full flex items-center gap-3 px-5 py-3.5 hover:bg-[#f7f8fa] transition-colors text-left ${
-                  idx < recentNotices.length - 1 ? 'border-b border-[#f7f8fa]' : ''
+                  idx < Math.min(activeNotices.length, 4) - 1 ? 'border-b border-[#f7f8fa]' : ''
                 }`}
               >
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: notice.dot }} />
@@ -242,6 +269,55 @@ export default function StoreHomePage() {
           </div>
         </div>
       </div>
+
+      {/* Notification Drawer Overlay */}
+      {showNotifications && (
+        <div 
+          className="fixed inset-0 z-50 bg-[#191f28]/40 transition-opacity"
+          onClick={() => setShowNotifications(false)}
+        >
+          {/* Drawer Panel */}
+          <div 
+            className="absolute right-0 top-0 bottom-0 w-[300px] sm:w-[360px] bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-5 border-b border-[#e5e8eb]">
+              <h2 className="text-[18px] text-[#191f28]" style={{ fontWeight: 800 }}>알림 리스트</h2>
+              <button 
+                onClick={() => setShowNotifications(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#f2f4f6] transition-colors"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#8b95a1]"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto bg-[#f7f8fa] p-4 space-y-3">
+              {activeNotices.length > 0 ? (
+                activeNotices.map(notice => (
+                  <div key={notice.id} className="bg-white rounded-xl p-4 shadow-sm relative group border border-[#e5e8eb]/50">
+                    <button 
+                      onClick={(e) => handleDismiss(notice.id, e)}
+                      className="absolute right-3 top-3 w-6 h-6 flex items-center justify-center rounded-full bg-[#f2f4f6] text-[#8b95a1] hover:bg-[#e5e8eb] hover:text-[#4e5968] transition-colors"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    <p className="text-[12px] text-[#3182f6] mb-1" style={{ fontWeight: 700 }}>{notice.type}</p>
+                    <p className="text-[14px] text-[#191f28] pr-6" style={{ fontWeight: 500 }}>{notice.text}</p>
+                    <p className="text-[11px] text-[#8b95a1] mt-2">{notice.date}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center py-20">
+                  <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mb-3 shadow-sm">
+                    <Bell className="w-6 h-6 text-[#c2c9d2]" />
+                  </div>
+                  <p className="text-[14px] text-[#4e5968]" style={{ fontWeight: 600 }}>새로운 알림이 없습니다.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

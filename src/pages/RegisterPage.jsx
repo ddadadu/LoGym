@@ -12,12 +12,12 @@ export default function RegisterPage() {
   const [otpToken, setOtpToken] = useState('')
   const [username, setUsername] = useState('')
   const [fullName, setFullName] = useState('')
-  
+
   // UI 상태
   const [viewMode, setViewMode] = useState('select') // 'select' | 'email'
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1) // 1: Email/PW 발송, 2: OTP 확인, 3: 세부 프로필 및 권한지정
-  
+
   // 아이디 유효성
   const [usernameError, setUsernameError] = useState('')
   const [usernameValid, setUsernameValid] = useState(false)
@@ -51,7 +51,7 @@ export default function RegisterPage() {
       }
       const sanitized = username.toLowerCase().replace(/[^a-z0-9_.]/g, '')
       if (sanitized !== username) setUsername(sanitized)
-      
+
       if (sanitized.length < 3) {
         setUsernameError('아이디는 영/숫자 3자 이상')
         setUsernameValid(false)
@@ -60,7 +60,7 @@ export default function RegisterPage() {
       setIsCheckingUser(true)
       const { data } = await supabase.from('users').select('id').eq('username', sanitized).maybeSingle()
       setIsCheckingUser(false)
-      
+
       if (data) {
         setUsernameError('이미 사용중인 아이디입니다')
         setUsernameValid(false)
@@ -88,7 +88,7 @@ export default function RegisterPage() {
         password,
       })
       if (error) throw error
-      
+
       // 메일 전송 성공 시 2단계로 부드럽게 전환
       setStep(2)
       alert("입력하신 이메일로 6자리 인증번호가 발송되었습니다. 메일함을 확인해주세요!")
@@ -116,7 +116,7 @@ export default function RegisterPage() {
         type: 'signup'
       })
       if (error) throw error
-      
+
       // OTP 성공 시 세션 생성됨, 마지막 3단계로 이동
       setStep(3)
     } catch (error) {
@@ -155,13 +155,13 @@ export default function RegisterPage() {
         email: email,
         password_hash: passwordHash
       })
-      
+
       if (profileError) throw profileError
 
       alert('가입이 완료되었습니다!\n만반의 준비가 끝났습니다. 환영합니다!')
       if (isManager) navigate('/store/register', { replace: true })
       else navigate('/', { replace: true })
-      
+
     } catch (err) {
       console.error(err)
       alert(err.message || '프로필 설정 중 오류가 발생했습니다.')
@@ -187,7 +187,7 @@ export default function RegisterPage() {
               onClick={() => setViewMode('email')}
               className="flex w-full items-center justify-center gap-2 rounded-[16px] bg-[#3182f6] text-white py-4 font-bold transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              <Mail className="w-5 h-5"/>
+              <Mail className="w-5 h-5" />
               이메일로 회원가입
             </button>
             <div className="my-3 flex items-center justify-center gap-4">
@@ -222,18 +222,18 @@ export default function RegisterPage() {
         )}
 
         <div className="rounded-[24px] bg-white p-6 md:p-8 shadow-[0_4px_16px_rgba(0,0,0,0.04)] border border-[#e5e8eb] overflow-hidden relative">
-          
+
           {/* ========== STEP 1: 이메일 인증 발송 ========== */}
           {step === 1 && (
             <form onSubmit={sendVerificationEmail} className="space-y-4 animate-in fade-in duration-300">
               <h2 className="text-[22px] font-extrabold text-[#191f28] mb-6">계정 정보 입력</h2>
               <div className="space-y-1.5">
                 <label className="text-[12px] font-bold text-[#8b95a1] ml-1">이메일 주소</label>
-                <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="example@email.com" className="w-full rounded-[16px] border border-[#e5e8eb] bg-[#f9fafb] px-4 py-3.5 text-[14px] font-medium text-[#191f28] outline-none transition-colors focus:border-[#3182f6] focus:bg-white" />
+                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="example@email.com" className="w-full rounded-[16px] border border-[#e5e8eb] bg-[#f9fafb] px-4 py-3.5 text-[14px] font-medium text-[#191f28] outline-none transition-colors focus:border-[#3182f6] focus:bg-white" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[12px] font-bold text-[#8b95a1] ml-1">패스워드 (6자 이상)</label>
-                <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="비밀번호 설정" className="w-full rounded-[16px] border border-[#e5e8eb] bg-[#f9fafb] px-4 py-3.5 text-[14px] font-medium text-[#191f28] outline-none transition-colors focus:border-[#3182f6] focus:bg-white" />
+                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="비밀번호 설정" className="w-full rounded-[16px] border border-[#e5e8eb] bg-[#f9fafb] px-4 py-3.5 text-[14px] font-medium text-[#191f28] outline-none transition-colors focus:border-[#3182f6] focus:bg-white" />
               </div>
               <div className="pt-4">
                 <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 rounded-[16px] bg-[#3182f6] py-3.5 text-[15px] font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-50">
@@ -250,11 +250,11 @@ export default function RegisterPage() {
               <div className="w-12 h-12 rounded-full bg-[#e8f3ff] flex items-center justify-center mb-4">
                 <KeyRound className="w-6 h-6 text-[#3182f6]" strokeWidth={2.5} />
               </div>
-              <h2 className="text-[20px] font-extrabold text-[#191f28] leading-tight">이메일로<br/>번호를 발송했어요</h2>
+              <h2 className="text-[20px] font-extrabold text-[#191f28] leading-tight">이메일로<br />번호를 발송했어요</h2>
               <p className="text-[13px] text-[#4e5968] mb-6 whitespace-pre-wrap"><span className="font-bold">{email}</span> 주소로 전송된 6자리 인증 코드를 입력해주세요.</p>
-              
+
               <div className="space-y-1.5">
-                <input type="text" maxLength={6} required value={otpToken} onChange={e=>setOtpToken(e.target.value)} placeholder="000000" className="w-full rounded-[16px] border border-[#e5e8eb] bg-[#f9fafb] px-4 py-4 text-center text-[24px] tracking-[0.5em] font-extrabold text-[#3182f6] outline-none transition-colors focus:border-[#3182f6] focus:bg-white focus:ring-4 focus:ring-[#3182f6]/10" />
+                <input type="text" maxLength={6} required value={otpToken} onChange={e => setOtpToken(e.target.value)} placeholder="000000" className="w-full rounded-[16px] border border-[#e5e8eb] bg-[#f9fafb] px-4 py-4 text-center text-[24px] tracking-[0.5em] font-extrabold text-[#3182f6] outline-none transition-colors focus:border-[#3182f6] focus:bg-white focus:ring-4 focus:ring-[#3182f6]/10" />
               </div>
               <div className="pt-2 flex flex-col gap-2">
                 <button type="submit" disabled={loading || otpToken.length < 6} className="w-full flex items-center justify-center gap-2 rounded-[16px] bg-[#3182f6] py-3.5 text-[15px] font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100">
@@ -285,7 +285,7 @@ export default function RegisterPage() {
                   </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-[#b0b8c1]">@</span>
-                    <input type="text" required value={username} onChange={e=>setUsername(e.target.value)} placeholder="logym_user" className="w-full rounded-[16px] border border-[#e5e8eb] bg-[#f9fafb] px-4 py-3.5 pl-9 text-[14px] font-bold text-[#191f28] outline-none transition-colors focus:border-[#3182f6] focus:bg-white" />
+                    <input type="text" required value={username} onChange={e => setUsername(e.target.value)} placeholder="logym_user" className="w-full rounded-[16px] border border-[#e5e8eb] bg-[#f9fafb] px-4 py-3.5 pl-9 text-[14px] font-bold text-[#191f28] outline-none transition-colors focus:border-[#3182f6] focus:bg-white" />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2">
                       {isCheckingUser && <Loader2 className="h-4 w-4 animate-spin text-[#b0b8c1]" />}
                     </div>
@@ -294,7 +294,7 @@ export default function RegisterPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-[12px] font-bold text-[#8b95a1] ml-1">이름 또는 닉네임</label>
-                  <input type="text" required value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="김로짐 (중복가능)" className="w-full rounded-[16px] border border-[#e5e8eb] bg-[#f9fafb] px-4 py-3.5 text-[14px] font-bold text-[#191f28] outline-none transition-colors focus:border-[#3182f6] focus:bg-white" />
+                  <input type="text" required value={fullName} onChange={e => setFullName(e.target.value)} placeholder="김로짐 (중복가능)" className="w-full rounded-[16px] border border-[#e5e8eb] bg-[#f9fafb] px-4 py-3.5 text-[14px] font-bold text-[#191f28] outline-none transition-colors focus:border-[#3182f6] focus:bg-white" />
                 </div>
               </div>
 

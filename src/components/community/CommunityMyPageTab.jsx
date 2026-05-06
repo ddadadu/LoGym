@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Calendar as CalendarIcon, Upload, Trash2, CheckCircle2, Clock, Dumbbell, Heart, MessageSquare, Send } from 'lucide-react';
+import { Calendar as CalendarIcon, Upload, Trash2, CheckCircle2, Clock, Dumbbell, Heart, MessageSquare, Send, Users } from 'lucide-react';
+import UserListModal from './UserListModal';
 
 // 간이 날짜 포매터
 const formatDate = (dateString) => new Date(dateString).toLocaleDateString('ko-KR');
@@ -20,6 +21,11 @@ export default function CommunityMyPageTab({ currentUser }) {
   // 댓글 토글 및 입력 상태
   const [expandedComments, setExpandedComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
+
+  // 팔로워/팔로잉 상태
+  const [counts, setCounts] = useState({ followers: 0, following: 0 });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState('followers');
 
   useEffect(() => {
     fetchData();
@@ -69,6 +75,19 @@ export default function CommunityMyPageTab({ currentUser }) {
 
       setMyLogs(logsData || []);
       setMyFeeds(feedsData || []);
+
+      // 팔로워/팔로잉 카운트 조회
+      const { count: followersCount } = await supabase
+        .from('follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('followed_id', currentUser.id);
+      
+      const { count: followingCount } = await supabase
+        .from('follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('follower_id', currentUser.id);
+
+      setCounts({ followers: followersCount || 0, following: followingCount || 0 });
     } catch (err) {
       console.error(err);
     } finally {
@@ -165,6 +184,33 @@ export default function CommunityMyPageTab({ currentUser }) {
 
   return (
     <div className="p-4 space-y-4 animate-in fade-in duration-300">
+      
+      {/* 프로필 헤더 추가 */}
+      <div className="bg-white rounded-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[#e5e8eb] p-6 flex flex-col items-center">
+        <div className="w-20 h-20 rounded-full bg-[#f2f4f6] flex items-center justify-center mb-3">
+          <Users className="w-10 h-10 text-[#b0b8c1]" />
+        </div>
+        <h2 className="text-[20px] font-extrabold text-[#191f28] mb-1">{currentUser.full_name}</h2>
+        <p className="text-[14px] text-[#8b95a1] mb-5">@{currentUser.username}</p>
+        
+        <div className="flex items-center gap-8 border-t border-[#f2f4f6] pt-5 w-full justify-center">
+          <button 
+            onClick={() => { setModalType('followers'); setModalOpen(true); }}
+            className="flex flex-col items-center gap-1 group"
+          >
+            <span className="text-[18px] font-extrabold text-[#191f28] group-hover:text-[#3182f6] transition-colors">{counts.followers}</span>
+            <span className="text-[12px] font-bold text-[#8b95a1]">팔로워</span>
+          </button>
+          <div className="w-[1px] h-8 bg-[#f2f4f6]" />
+          <button 
+            onClick={() => { setModalType('following'); setModalOpen(true); }}
+            className="flex flex-col items-center gap-1 group"
+          >
+            <span className="text-[18px] font-extrabold text-[#191f28] group-hover:text-[#3182f6] transition-colors">{counts.following}</span>
+            <span className="text-[12px] font-bold text-[#8b95a1]">팔로잉</span>
+          </button>
+        </div>
+      </div>
       
       <div className="bg-white rounded-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[#e5e8eb] p-5">
         <div className="flex items-center justify-between mb-4">
@@ -387,6 +433,14 @@ export default function CommunityMyPageTab({ currentUser }) {
           </div>
         </div>
       )}
+
+      <UserListModal 
+        isOpen={modalOpen}
+        onClose={() => { setModalOpen(false); fetchData(); }}
+        userId={currentUser.id}
+        type={modalType}
+        currentUser={currentUser}
+      />
     </div>
   );
 }

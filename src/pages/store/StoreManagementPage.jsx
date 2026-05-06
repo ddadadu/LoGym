@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Dumbbell, UserCheck, Settings2, Save } from 'lucide-react';
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Dumbbell, UserCheck, Settings2, Save, Tag } from 'lucide-react';
+import BrandSelectorModal from '../../components/BrandSelectorModal';
 
 const CATEGORIES = ['전체', '유산소', '웨이트', '머신'];
 const CONDITION_LABELS = {
@@ -35,7 +36,8 @@ export default function StoreManagementPage() {
   const [isSavingInfra, setIsSavingInfra] = useState(false);
 
   // Forms
-  const [newEquip, setNewEquip] = useState({ category: '유산소', name: '', quantity: 1, brand: '', condition: 'good' });
+  const [newEquip, setNewEquip] = useState({ category: '유산소', name: '', quantity: 1, brand_id: null, custom_brand_name: '', brand_display: '', condition: 'good' });
+  const [showBrandSelector, setShowBrandSelector] = useState(false);
   const [newTrainer, setNewTrainer] = useState({ name: '', specialty: '', experience: '', schedule: '', certs: '' });
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export default function StoreManagementPage() {
     // 1. Equipments
     const { data: geData } = await supabase
       .from('gym_equipments')
-      .select('*, equipments(name, category)')
+      .select('*, equipments(name, category), equipment_brands(name_ko)')
       .eq('gym_id', gymId);
       
     if (geData) {
@@ -56,7 +58,7 @@ export default function StoreManagementPage() {
         name: item.equipments?.name || '알 수 없음',
         quantity: item.quantity || 1,
         condition: item.condition || 'good',
-        brand: item.brand || '',
+        brandDisplay: item.equipment_brands ? item.equipment_brands.name_ko : (item.custom_brand_name || ''),
       })));
     }
 
@@ -99,10 +101,11 @@ export default function StoreManagementPage() {
         equipment_id: eqId,
         quantity: newEquip.quantity,
         condition: newEquip.condition,
-        brand: newEquip.brand
+        brand_id: newEquip.brand_id,
+        custom_brand_name: newEquip.custom_brand_name
       }, { onConflict: 'gym_id, equipment_id' });
       
-      setNewEquip({ category: '유산소', name: '', quantity: 1, brand: '', condition: 'good' });
+      setNewEquip({ category: '유산소', name: '', quantity: 1, brand_id: null, custom_brand_name: '', brand_display: '', condition: 'good' });
       setShowAddEquipment(false);
       fetchData();
     }
@@ -253,6 +256,18 @@ export default function StoreManagementPage() {
                     />
                   </div>
                   <div>
+                    <label className="text-[12px] text-[#8b95a1] mb-1 block">브랜드 (선택)</label>
+                    <button 
+                      onClick={() => setShowBrandSelector(true)}
+                      className="w-full h-10 bg-[#f2f4f6] hover:bg-[#e8ebed] rounded-xl px-3 text-[14px] text-left flex items-center justify-between transition-colors"
+                    >
+                      <span className={newEquip.brand_display ? "text-[#191f28] font-bold" : "text-[#8b95a1]"}>
+                        {newEquip.brand_display || '브랜드 선택'}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-[#8b95a1]" />
+                    </button>
+                  </div>
+                  <div>
                     <label className="text-[12px] text-[#8b95a1] mb-1 block">상태</label>
                     <select
                       value={newEquip.condition}
@@ -297,7 +312,15 @@ export default function StoreManagementPage() {
                                 {cond.label}
                               </span>
                             </div>
-                            <p className="text-[12px] text-[#8b95a1] mt-0.5">{eq.quantity}대 보유</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <p className="text-[12px] text-[#8b95a1]">{eq.quantity}대 보유</p>
+                              {eq.brandDisplay && (
+                                <>
+                                  <span className="w-1 h-1 rounded-full bg-[#d1d6db]"></span>
+                                  <p className="text-[12px] text-[#4e5968] font-medium flex items-center gap-1"><Tag className="w-3 h-3"/> {eq.brandDisplay}</p>
+                                </>
+                              )}
+                            </div>
                           </div>
                           <button onClick={() => deleteEquipment(eq.id)} className="w-8 h-8 rounded-lg hover:bg-[#fef2f2] flex items-center justify-center transition-colors">
                             <Trash2 className="w-3.5 h-3.5 text-[#f04452]" />
@@ -435,6 +458,19 @@ export default function StoreManagementPage() {
           </div>
         )}
       </div>
+
+      <BrandSelectorModal 
+        isOpen={showBrandSelector} 
+        onClose={() => setShowBrandSelector(false)} 
+        onSelect={(brandInfo) => {
+          setNewEquip(prev => ({
+            ...prev,
+            brand_id: brandInfo.isCustom ? null : brandInfo.id,
+            custom_brand_name: brandInfo.isCustom ? brandInfo.name : '',
+            brand_display: brandInfo.name
+          }));
+        }} 
+      />
     </div>
   );
 }

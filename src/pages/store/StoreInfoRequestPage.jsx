@@ -15,12 +15,13 @@ export default function StoreInfoRequestPage() {
 
   const fetchRequests = async () => {
     setIsLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('infrastructure_requests')
-      .select('*, users!requested_by(full_name, username)')
+      .select('*, users!infrastructure_requests_requested_by_fkey(full_name, username)')
       .eq('gym_id', gymId)
       .order('created_at', { ascending: false });
     
+    if (error) console.error("Fetch requests error:", error);
     if (data) setRequests(data);
     setIsLoading(false);
   };
@@ -30,7 +31,7 @@ export default function StoreInfoRequestPage() {
 
     // 만약 승인이고 페이로드가 있다면 실제 기구 데이터 업데이트
     if (action === 'approved' && payload) {
-      const { equipment_id, name, category, quantity, condition, brand } = payload;
+      const { equipment_id, name, category, quantity, condition, brand_id, custom_brand_name } = payload;
       let eqId = equipment_id;
 
       // 마스터 기구 ID가 없다면(신규 기구명) 직접 생성 후 연동
@@ -50,7 +51,8 @@ export default function StoreInfoRequestPage() {
           equipment_id: eqId,
           quantity: quantity ? parseInt(quantity) : 1,
           condition: condition || 'good',
-          brand: brand || ''
+          brand_id: brand_id || null,
+          custom_brand_name: custom_brand_name || null
         }, { onConflict: 'gym_id, equipment_id' });
       }
     }

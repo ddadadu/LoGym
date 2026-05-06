@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { ChevronLeft, Dumbbell, MapPin, Clock, UserCheck, ClipboardList, CheckCircle2, XCircle, AlertCircle, Phone, CheckSquare, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Dumbbell, MapPin, Clock, UserCheck, ClipboardList, CheckCircle2, XCircle, AlertCircle, Phone, CheckSquare, RefreshCw, ChevronDown } from 'lucide-react';
+import BrandSelectorModal from '../components/BrandSelectorModal';
 
 const CONDITION_LABELS = {
   excellent: { label: '양호', color: '#00c471', bg: '#e8faf0' },
@@ -24,7 +25,9 @@ export default function MyGymDetailPage() {
   
   // 제보 모달
   const [showRequestModal, setShowRequestModal] = useState(false);
-  const [reqForm, setReqForm] = useState({ name: '', quantity: '', condition: 'maintenance', message: '' });
+  const [showBrandSelector, setShowBrandSelector] = useState(false);
+  const [editReqId, setEditReqId] = useState(null); // 수정 중인 제보 ID
+  const [reqForm, setReqForm] = useState({ name: '', quantity: '', condition: 'maintenance', message: '', brand_id: null, custom_brand_name: '', brand_display: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -87,26 +90,86 @@ export default function MyGymDetailPage() {
       name: reqForm.name,
       quantity: reqForm.quantity,
       condition: reqForm.condition,
-      message: reqForm.message
+      message: reqForm.message,
+      brand_id: reqForm.brand_id,
+      custom_brand_name: reqForm.custom_brand_name
     };
 
-    const { error } = await supabase.from('infrastructure_requests').insert({
-      gym_id: gymId,
-      requested_by: currentUser.id,
-      request_type: '기구',
-      request_payload: payload,
-      status: 'pending'
-    });
+    let error;
+
+    if (editReqId) {
+      // 제보 수정 (pending 상태일 때만 가능)
+      const { error: updateError } = await supabase.from('infrastructure_requests').update({
+        equipment_name: reqForm.name,
+        equipment_brand_id: reqForm.brand_id || null,
+        custom_brand_name: reqForm.custom_brand_name || null,
+        request_payload: payload
+      }).eq('id', editReqId);
+      error = updateError;
+    } else {
+      // 신규 제보
+      const { error: insertError } = await supabase.from('infrastructure_requests').insert({
+        gym_id: gymId,
+        requested_by: currentUser.id,
+        equipment_name: reqForm.name,
+        equipment_brand_id: reqForm.brand_id || null,
+        custom_brand_name: reqForm.custom_brand_name || null,
+        request_type: '기구',
+        request_payload: payload,
+        status: 'pending'
+      });
+      error = insertError;
+    }
 
     setIsSubmitting(false);
     if (!error) {
-      alert("제보가 성공적으로 접수되었습니다. 관리자 검토 후 반영됩니다.");
-      setShowRequestModal(false);
-      setReqForm({ name: '', quantity: '', condition: 'maintenance', message: '' });
+      alert(editReqId ? "제보가 성공적으로 수정되었습니다." : "제보가 성공적으로 접수되었습니다. 관리자 검토 후 반영됩니다.");
+      closeRequestModal();
       fetchMyGym(); // reload requests
       setTab('request');
     } else {
-      alert("제보 접수 중 오류가 발생했습니다.");
+      console.error("Supabase Request Error:", error);
+      alert(`제보 처리 중 오류가 발생했습니다: ${error.message || JSON.stringify(error)}`);
+    }
+  };
+
+  const openRequestModal = () => {
+    setEditReqId(null);
+    setReqForm({ name: '', quantity: '', condition: 'maintenance', message: '', brand_id: null, custom_brand_name: '', brand_display: '' });
+    setShowRequestModal(true);
+  };
+
+  const openEditModal = (req) => {
+    const p = req.request_payload || {};
+    setEditReqId(req.id);
+    setReqForm({
+      name: p.name || '',
+      quantity: p.quantity || '',
+      condition: p.condition || 'maintenance',
+      message: p.message || '',
+      brand_id: p.brand_id || null,
+      custom_brand_name: p.custom_brand_name || '',
+      brand_display: p.custom_brand_name ? p.custom_brand_name : (p.brand_id ? '브랜드 유지됨 (선택)' : '') // Note: We might not have the actual brand name here easily unless fetched, but we can set a placeholder or fetch it if needed.
+    });
+    setShowRequestModal(true);
+  };
+
+  const closeRequestModal = () => {
+    setShowRequestModal(false);
+    setEditReqId(null);
+    setReqForm({ name: '', quantity: '', condition: 'maintenance', message: '', brand_id: null, custom_brand_name: '', brand_display: '' });
+  };
+
+  const deleteRequest = async (reqId) => {
+    if (!confirm("정말로 이 제보를 취소하시겠습니까?")) return;
+    
+    const { error } = await supabase.from('infrastructure_requests').delete().eq('id', reqId);
+    if (!error) {
+      alert("제보가 취소되었습니다.");
+      fetchMyGym();
+    } else {
+      console.error("Supabase Delete Error:", error);
+      alert("제보 취소 중 오류가 발생했습니다.");
     }
   };
 
@@ -191,7 +254,7 @@ export default function MyGymDetailPage() {
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-[13px] text-[#4e5968] font-bold">총 {equipments.length}종 등록됨</span>
               <button 
-                onClick={() => setShowRequestModal(true)}
+                onClick={openRequestModal}
                 className="flex items-center gap-1 px-3 py-1.5 bg-[#fee2e2] text-[#f04452] text-[12px] rounded-lg hover:bg-[#fecaca] font-semibold transition-colors active:scale-95"
               >
                 <AlertCircle className="w-3.5 h-3.5" />
@@ -287,6 +350,23 @@ export default function MyGymDetailPage() {
                   <p className="text-[13px] text-[#4e5968] line-clamp-2">수량/대수: <span className="font-semibold">{p.quantity || 1}대</span></p>
                   {p.message && <p className="text-[12px] text-[#8b95a1] bg-[#f7f8fa] p-2 rounded-lg mt-2 italic">"{p.message}"</p>}
                   <p className="text-[11px] text-[#c2c9d2] font-semibold mt-3 block w-full pt-3 border-t border-[#f7f8fa]">본 제보일: {new Date(req.created_at).toLocaleDateString()}</p>
+                  
+                  {isPending && (
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#f7f8fa]">
+                      <button 
+                        onClick={() => openEditModal(req)}
+                        className="flex-1 py-1.5 text-[12px] font-bold text-[#4e5968] bg-[#f2f4f6] rounded-lg hover:bg-[#e5e8eb] transition-colors"
+                      >
+                        수정하기
+                      </button>
+                      <button 
+                        onClick={() => deleteRequest(req.id)}
+                        className="flex-1 py-1.5 text-[12px] font-bold text-[#f04452] bg-[#fef2f2] rounded-lg hover:bg-[#fee2e2] transition-colors"
+                      >
+                        제보 취소
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -309,8 +389,8 @@ export default function MyGymDetailPage() {
           <div className="w-full h-[85vh] sm:h-auto sm:max-h-[85vh] max-w-md bg-white rounded-t-3xl sm:rounded-2xl px-6 pt-5 pb-8 overflow-y-auto animate-in slide-in-from-bottom-2 sm:slide-in-from-bottom-0 sm:fade-in duration-200">
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-[#e5e8eb] sm:hidden"></div>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-[20px] font-extrabold text-[#191f28]">기구 제보하기</h3>
-              <button onClick={() => setShowRequestModal(false)} className="p-1 -mr-1"><XCircle className="w-7 h-7 text-[#8b95a1] hover:text-[#191f28] transition-colors"/></button>
+              <h3 className="text-[20px] font-extrabold text-[#191f28]">{editReqId ? '기구 제보 수정하기' : '기구 제보하기'}</h3>
+              <button onClick={closeRequestModal} className="p-1 -mr-1"><XCircle className="w-7 h-7 text-[#8b95a1] hover:text-[#191f28] transition-colors"/></button>
             </div>
             
             <div className="space-y-4">
@@ -324,13 +404,25 @@ export default function MyGymDetailPage() {
                   <input value={reqForm.quantity} onChange={e=>setReqForm({...reqForm, quantity: e.target.value})} type="number" placeholder="예: 2" className="w-full h-12 bg-[#f2f4f6] rounded-xl px-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] text-[#191f28]" />
                 </div>
                 <div>
-                  <label className="text-[13px] text-[#4e5968] font-bold mb-1.5 block">기구 상태 (중요)</label>
-                  <select value={reqForm.condition} onChange={e=>setReqForm({...reqForm, condition: e.target.value})} className="w-full h-12 bg-[#f2f4f6] rounded-xl px-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] text-[#191f28]">
-                    <option value="good">사용가능/보통</option>
+                  <label className="text-[13px] text-[#4e5968] font-bold mb-1.5 block">브랜드 (선택)</label>
+                  <button 
+                    onClick={() => setShowBrandSelector(true)}
+                    className="w-full h-12 bg-[#f2f4f6] hover:bg-[#e8ebed] rounded-xl px-4 text-[14px] text-left flex items-center justify-between transition-colors border-2 border-transparent focus:border-[#3182f6]"
+                  >
+                    <span className={reqForm.brand_display ? "text-[#191f28] font-bold" : "text-[#8b95a1]"}>
+                      {reqForm.brand_display || '브랜드 선택'}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-[#8b95a1]" />
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="text-[13px] text-[#4e5968] font-bold mb-1.5 block">기구 상태 (중요)</label>
+                <select value={reqForm.condition} onChange={e=>setReqForm({...reqForm, condition: e.target.value})} className="w-full h-12 bg-[#f2f4f6] rounded-xl px-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] text-[#191f28]">
+                  <option value="good">사용가능/보통</option>
                     <option value="maintenance">단선·고장 (사용불가)</option>
                     <option value="excellent">새로 입고됨!</option>
                   </select>
-                </div>
               </div>
               <div>
                 <label className="text-[13px] text-[#4e5968] font-bold mb-1.5 block">상세 설명 남기기</label>
@@ -351,11 +443,24 @@ export default function MyGymDetailPage() {
               className="w-full h-14 rounded-2xl bg-[#3182f6] text-white font-bold text-[16px] mt-2 transition-all active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-[#3182f6]/20"
             >
               {isSubmitting ? <span className="animate-spin w-4 h-4 border-2 border-white/40 border-t-white rounded-full"/> : null}
-              {isSubmitting ? '점포로 전송 중...' : '관리자에게 헬스장 데이터 제보하기'}
+              {isSubmitting ? (editReqId ? '수정 중...' : '점포로 전송 중...') : (editReqId ? '제보 수정 완료' : '관리자에게 헬스장 데이터 제보하기')}
             </button>
           </div>
         </div>
       )}
+
+      <BrandSelectorModal 
+        isOpen={showBrandSelector} 
+        onClose={() => setShowBrandSelector(false)} 
+        onSelect={(brandInfo) => {
+          setReqForm(prev => ({
+            ...prev,
+            brand_id: brandInfo.isCustom ? null : brandInfo.id,
+            custom_brand_name: brandInfo.isCustom ? brandInfo.name : '',
+            brand_display: brandInfo.name
+          }));
+        }} 
+      />
     </div>
   );
 }
