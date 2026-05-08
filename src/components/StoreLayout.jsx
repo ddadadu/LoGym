@@ -31,10 +31,35 @@ export default function StoreLayout() {
         .single();
         
       setProfile(data);
-      setIsLoading(false);
       
-      if (data && !data.is_manager) navigate('/', { replace: true });
-      if (data && data.is_manager && !data.home_gym_id) navigate('/store/register', { replace: true });
+      if (data && !data.is_manager) {
+        navigate('/', { replace: true });
+        return;
+      }
+      
+      if (data && data.is_manager && !data.home_gym_id) {
+        navigate('/store/register', { replace: true });
+        return;
+      }
+
+      if (data && data.is_manager && data.home_gym_id) {
+        const { data: managerData } = await supabase
+          .from('store_managers')
+          .select('status')
+          .eq('manager_id', user.id)
+          .eq('gym_id', data.home_gym_id)
+          .maybeSingle();
+
+        const status = managerData?.status;
+        
+        setIsLoading(false);
+
+        if (!status) {
+          navigate('/store/request-approval', { replace: true });
+        } else if (status === 'pending' || status === 'rejected') {
+          navigate('/store/approval-status', { replace: true });
+        }
+      }
     };
     
     checkAuth();

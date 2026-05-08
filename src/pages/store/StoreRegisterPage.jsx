@@ -185,8 +185,8 @@ export default function StoreRegisterPage() {
         if (insertError) throw insertError;
       }
 
-      alert(`'${place.place_name}'의 관리자로 성공적으로 등록되었습니다!\n점포 대시보드로 이동합니다.`);
-      navigate('/store'); // 성공 시 대시보드 진입
+      alert(`'${place.place_name}' 점포가 선택되었습니다.\n관리자 권한 승인을 위한 증빙 서류 제출 페이지로 이동합니다.`);
+      navigate('/store/request-approval'); // 서류 제출 페이지로 진입
     } catch (err) {
       console.error('Store Registration Error:', err);
       alert('점포 인증 처리 중 오류가 발생했습니다.');

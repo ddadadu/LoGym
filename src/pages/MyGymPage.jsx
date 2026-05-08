@@ -46,6 +46,7 @@ export default function MyGymPage() {
   const [currentUser, setCurrentUser] = useState(null)
   const [myGymId, setMyGymId] = useState(null) // 현재 내 헬스장의 '카카오 고유 ID'
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(true)
 
   // 1. 로그인 유저 정보 및 '이미 등록된 내 헬스장' 판단 (초기 1회)
   useEffect(() => {
@@ -72,6 +73,8 @@ export default function MyGymPage() {
           }
         }
       }
+      // 리다이렉트가 일어나지 않은 경우에만 로딩 해제 (맵 렌더링 시작)
+      setIsInitializing(false)
     }
     fetchUserProfile()
   }, [navigate, location])
@@ -248,12 +251,18 @@ export default function MyGymPage() {
     }
   };
 
+  if (isInitializing) {
+    return <div className="flex h-[100dvh] w-full items-center justify-center bg-[#f9fafb]">
+      <span className="animate-spin w-8 h-8 rounded-full border-2 border-[#3182f6]/30 border-t-[#3182f6]" />
+    </div>
+  }
+
   if (loading) {
-    return <div className="flex h-full w-full items-center justify-center text-[#8b95a1]">지도를 불러오는 중입니다...</div>
+    return <div className="flex h-[100dvh] w-full items-center justify-center text-[#8b95a1]">지도를 불러오는 중입니다...</div>
   }
 
   if (error) {
-    return <div className="flex h-full w-full items-center justify-center text-red-500 text-sm">지도 로딩 에러 (API 키 및 도메인을 확인하세요)</div>
+    return <div className="flex h-[100dvh] w-full items-center justify-center text-red-500 text-sm">지도 로딩 에러 (API 키 및 도메인을 확인하세요)</div>
   }
 
   return (

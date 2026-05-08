@@ -19,10 +19,10 @@ export default function MyGymDetailPage() {
   const [trainers, setTrainers] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [tab, setTab] = useState('equipment'); // equipment, trainer, request
-  
+
   // 제보 모달
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showBrandSelector, setShowBrandSelector] = useState(false);
@@ -84,7 +84,7 @@ export default function MyGymDetailPage() {
   const submitRequest = async () => {
     if (!reqForm.name) { alert("기구명을 입력해주세요."); return; }
     setIsSubmitting(true);
-    
+
     const payload = {
       type: '기구제보',
       name: reqForm.name,
@@ -162,7 +162,7 @@ export default function MyGymDetailPage() {
 
   const deleteRequest = async (reqId) => {
     if (!confirm("정말로 이 제보를 취소하시겠습니까?")) return;
-    
+
     const { error } = await supabase.from('infrastructure_requests').delete().eq('id', reqId);
     if (!error) {
       alert("제보가 취소되었습니다.");
@@ -186,8 +186,8 @@ export default function MyGymDetailPage() {
           </button>
           <h1 className="text-[17px] font-bold text-[#191f28] ml-1">내 헬스장 정보</h1>
         </div>
-        <button 
-          onClick={() => navigate('/mygym?change=true')} 
+        <button
+          onClick={() => navigate('/mygym?change=true')}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f2f4f6] text-[#4e5968] rounded-lg text-[13px] font-bold hover:bg-[#e5e8eb] active:scale-95 transition-all"
         >
           <RefreshCw className="w-3.5 h-3.5 text-[#8b95a1]" strokeWidth={2.5} />
@@ -229,22 +229,25 @@ export default function MyGymDetailPage() {
       {/* Tabs */}
       <div className="flex bg-white px-5 border-b border-[#e5e8eb] sticky top-14 z-30 shadow-sm">
         {[
-          { key: 'equipment', label: '🏋️ 보유 기구' },
-          { key: 'trainer', label: '👤 트레이너' },
-          { key: 'request', label: '📌 나의 제보' },
-        ].map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex-1 py-3.5 text-[14px] transition-colors relative ${
-              tab === t.key ? 'text-[#191f28]' : 'text-[#8b95a1]'
-            }`}
-            style={{ fontWeight: tab === t.key ? 700 : 500 }}
-          >
-             {t.label}
-             {tab === t.key && <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-t bg-[#191f28]" />}
-          </button>
-        ))}
+          { key: 'equipment', label: '보유 기구', icon: Dumbbell },
+          { key: 'trainer', label: '트레이너', icon: UserCheck },
+          { key: 'request', label: '나의 제보', icon: ClipboardList },
+        ].map((t) => {
+          const TabIcon = t.icon;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex-1 py-3.5 text-[14px] transition-colors relative flex items-center justify-center gap-1.5 ${tab === t.key ? 'text-[#191f28]' : 'text-[#8b95a1]'
+                }`}
+              style={{ fontWeight: tab === t.key ? 700 : 500 }}
+            >
+              <TabIcon className="w-4 h-4" />
+              {t.label}
+              {tab === t.key && <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-t bg-[#191f28]" />}
+            </button>
+          );
+        })}
       </div>
 
       <div className="p-4 flex-1">
@@ -253,7 +256,7 @@ export default function MyGymDetailPage() {
           <div className="animate-in fade-in duration-300">
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-[13px] text-[#4e5968] font-bold">총 {equipments.length}종 등록됨</span>
-              <button 
+              <button
                 onClick={openRequestModal}
                 className="flex items-center gap-1 px-3 py-1.5 bg-[#fee2e2] text-[#f04452] text-[12px] rounded-lg hover:bg-[#fecaca] font-semibold transition-colors active:scale-95"
               >
@@ -261,7 +264,7 @@ export default function MyGymDetailPage() {
                 정보 오류/누락 제보
               </button>
             </div>
-            
+
             <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden border border-[#e5e8eb]/50">
               {equipments.map((eq, idx) => {
                 const cond = CONDITION_LABELS[eq.condition] || CONDITION_LABELS.good;
@@ -329,7 +332,7 @@ export default function MyGymDetailPage() {
         {/* 제보 내역 탭 */}
         {tab === 'request' && (
           <div className="animate-in fade-in duration-300 space-y-3">
-             <div className="flex items-center justify-between px-1 mb-2">
+            <div className="flex items-center justify-between px-1 mb-2">
               <span className="text-[13px] text-[#4e5968] font-bold">내가 헬스장 점장님께 제보한 내역</span>
             </div>
             {myRequests.map(req => {
@@ -341,7 +344,7 @@ export default function MyGymDetailPage() {
                   <div className="flex justify-between items-start mb-3">
                     <span className="text-[11px] px-2.5 py-1 bg-[#ebf4ff] text-[#3182f6] rounded-full font-bold">{req.request_type || '기구'} 제보</span>
                     <span className={`text-[12px] font-bold flex items-center gap-1 ${isPending ? 'text-[#f59e0b]' : isApproved ? 'text-[#00c471]' : 'text-[#f04452]'}`}>
-                      {isPending ? <Clock className="w-3.5 h-3.5"/> : isApproved ? <CheckCircle2 className="w-3.5 h-3.5"/> : <XCircle className="w-3.5 h-3.5"/>}
+                      {isPending ? <Clock className="w-3.5 h-3.5" /> : isApproved ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                       {isPending ? '점장 검토중' : isApproved ? '승인 및 앱 반영완료' : '반려됨'}
                     </span>
                   </div>
@@ -350,16 +353,16 @@ export default function MyGymDetailPage() {
                   <p className="text-[13px] text-[#4e5968] line-clamp-2">수량/대수: <span className="font-semibold">{p.quantity || 1}대</span></p>
                   {p.message && <p className="text-[12px] text-[#8b95a1] bg-[#f7f8fa] p-2 rounded-lg mt-2 italic">"{p.message}"</p>}
                   <p className="text-[11px] text-[#c2c9d2] font-semibold mt-3 block w-full pt-3 border-t border-[#f7f8fa]">본 제보일: {new Date(req.created_at).toLocaleDateString()}</p>
-                  
+
                   {isPending && (
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#f7f8fa]">
-                      <button 
+                      <button
                         onClick={() => openEditModal(req)}
                         className="flex-1 py-1.5 text-[12px] font-bold text-[#4e5968] bg-[#f2f4f6] rounded-lg hover:bg-[#e5e8eb] transition-colors"
                       >
                         수정하기
                       </button>
-                      <button 
+                      <button
                         onClick={() => deleteRequest(req.id)}
                         className="flex-1 py-1.5 text-[12px] font-bold text-[#f04452] bg-[#fef2f2] rounded-lg hover:bg-[#fee2e2] transition-colors"
                       >
@@ -370,7 +373,7 @@ export default function MyGymDetailPage() {
                 </div>
               );
             })}
-             {myRequests.length === 0 && (
+            {myRequests.length === 0 && (
               <div className="py-16 text-center border border-dashed border-[#e5e8eb] bg-white rounded-2xl">
                 <div className="w-12 h-12 rounded-full bg-[#f2f4f6] flex items-center justify-center mx-auto mb-3">
                   <ClipboardList className="w-6 h-6 text-[#c2c9d2]" />
@@ -390,22 +393,22 @@ export default function MyGymDetailPage() {
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-[#e5e8eb] sm:hidden"></div>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-[20px] font-extrabold text-[#191f28]">{editReqId ? '기구 제보 수정하기' : '기구 제보하기'}</h3>
-              <button onClick={closeRequestModal} className="p-1 -mr-1"><XCircle className="w-7 h-7 text-[#8b95a1] hover:text-[#191f28] transition-colors"/></button>
+              <button onClick={closeRequestModal} className="p-1 -mr-1"><XCircle className="w-7 h-7 text-[#8b95a1] hover:text-[#191f28] transition-colors" /></button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="text-[13px] text-[#4e5968] font-bold mb-1.5 block">어떤 기구인가요? (필수)</label>
-                <input value={reqForm.name} onChange={e=>setReqForm({...reqForm, name: e.target.value})} placeholder="예: 레그 익스텐션 투인원" className="w-full h-12 bg-[#f2f4f6] rounded-xl px-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] transition-colors text-[#191f28]" />
+                <input value={reqForm.name} onChange={e => setReqForm({ ...reqForm, name: e.target.value })} placeholder="예: 레그 익스텐션 투인원" className="w-full h-12 bg-[#f2f4f6] rounded-xl px-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] transition-colors text-[#191f28]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[13px] text-[#4e5968] font-bold mb-1.5 block">수량 (필수)</label>
-                  <input value={reqForm.quantity} onChange={e=>setReqForm({...reqForm, quantity: e.target.value})} type="number" placeholder="예: 2" className="w-full h-12 bg-[#f2f4f6] rounded-xl px-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] text-[#191f28]" />
+                  <input value={reqForm.quantity} onChange={e => setReqForm({ ...reqForm, quantity: e.target.value })} type="number" placeholder="예: 2" className="w-full h-12 bg-[#f2f4f6] rounded-xl px-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] text-[#191f28]" />
                 </div>
                 <div>
                   <label className="text-[13px] text-[#4e5968] font-bold mb-1.5 block">브랜드 (선택)</label>
-                  <button 
+                  <button
                     onClick={() => setShowBrandSelector(true)}
                     className="w-full h-12 bg-[#f2f4f6] hover:bg-[#e8ebed] rounded-xl px-4 text-[14px] text-left flex items-center justify-between transition-colors border-2 border-transparent focus:border-[#3182f6]"
                   >
@@ -418,15 +421,15 @@ export default function MyGymDetailPage() {
               </div>
               <div>
                 <label className="text-[13px] text-[#4e5968] font-bold mb-1.5 block">기구 상태 (중요)</label>
-                <select value={reqForm.condition} onChange={e=>setReqForm({...reqForm, condition: e.target.value})} className="w-full h-12 bg-[#f2f4f6] rounded-xl px-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] text-[#191f28]">
+                <select value={reqForm.condition} onChange={e => setReqForm({ ...reqForm, condition: e.target.value })} className="w-full h-12 bg-[#f2f4f6] rounded-xl px-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] text-[#191f28]">
                   <option value="good">사용가능/보통</option>
-                    <option value="maintenance">단선·고장 (사용불가)</option>
-                    <option value="excellent">새로 입고됨!</option>
-                  </select>
+                  <option value="maintenance">단선·고장 (사용불가)</option>
+                  <option value="excellent">새로 입고됨!</option>
+                </select>
               </div>
               <div>
                 <label className="text-[13px] text-[#4e5968] font-bold mb-1.5 block">상세 설명 남기기</label>
-                <textarea value={reqForm.message} onChange={e=>setReqForm({...reqForm, message: e.target.value})} placeholder="점장님이 보실 수 있도록 특이사항을 적어주세요. (예: 손잡이가 덜덜 떨립니다.)" rows={3} className="w-full bg-[#f2f4f6] rounded-xl p-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] resize-none text-[#191f28] placeholder-[#8b95a1]" />
+                <textarea value={reqForm.message} onChange={e => setReqForm({ ...reqForm, message: e.target.value })} placeholder="점장님이 보실 수 있도록 특이사항을 적어주세요. (예: 손잡이가 덜덜 떨립니다.)" rows={3} className="w-full bg-[#f2f4f6] rounded-xl p-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] resize-none text-[#191f28] placeholder-[#8b95a1]" />
               </div>
             </div>
 
@@ -437,21 +440,21 @@ export default function MyGymDetailPage() {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={submitRequest}
               disabled={isSubmitting || !reqForm.name}
               className="w-full h-14 rounded-2xl bg-[#3182f6] text-white font-bold text-[16px] mt-2 transition-all active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-[#3182f6]/20"
             >
-              {isSubmitting ? <span className="animate-spin w-4 h-4 border-2 border-white/40 border-t-white rounded-full"/> : null}
+              {isSubmitting ? <span className="animate-spin w-4 h-4 border-2 border-white/40 border-t-white rounded-full" /> : null}
               {isSubmitting ? (editReqId ? '수정 중...' : '점포로 전송 중...') : (editReqId ? '제보 수정 완료' : '관리자에게 헬스장 데이터 제보하기')}
             </button>
           </div>
         </div>
       )}
 
-      <BrandSelectorModal 
-        isOpen={showBrandSelector} 
-        onClose={() => setShowBrandSelector(false)} 
+      <BrandSelectorModal
+        isOpen={showBrandSelector}
+        onClose={() => setShowBrandSelector(false)}
         onSelect={(brandInfo) => {
           setReqForm(prev => ({
             ...prev,
@@ -459,7 +462,7 @@ export default function MyGymDetailPage() {
             custom_brand_name: brandInfo.isCustom ? brandInfo.name : '',
             brand_display: brandInfo.name
           }));
-        }} 
+        }}
       />
     </div>
   );
