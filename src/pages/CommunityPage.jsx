@@ -33,7 +33,7 @@ export default function CommunityPage() {
   return (
     <div className="min-h-[100dvh] pb-24 bg-[#f7f8fa] font-sans flex flex-col">
       <header className="flex h-14 items-center px-5 bg-white shadow-sm shrink-0 sticky top-0 z-40">
-        <h1 className="text-lg font-bold text-[#191f28]">소셜 커뮤니티</h1>
+        <h1 className="text-lg font-bold text-[#191f28]">커뮤니티</h1>
       </header>
 
       {/* 내부 탭 바 */}
@@ -46,14 +46,13 @@ export default function CommunityPage() {
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`flex-1 py-3.5 flex items-center justify-center gap-1.5 text-[14px] transition-colors relative outline-none ${
-              activeTab === t.key ? 'text-[#191f28]' : 'text-[#8b95a1]'
-            }`}
+            className={`flex-1 py-3.5 flex items-center justify-center gap-1.5 text-[14px] transition-colors relative outline-none ${activeTab === t.key ? 'text-[#191f28]' : 'text-[#8b95a1]'
+              }`}
             style={{ fontWeight: activeTab === t.key ? 700 : 500 }}
           >
-             <t.icon className="w-[18px] h-[18px]" strokeWidth={2.5} />
-             {t.label}
-             {activeTab === t.key && <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-t-full bg-[#191f28]" />}
+            <t.icon className="w-[18px] h-[18px]" strokeWidth={2.5} />
+            {t.label}
+            {activeTab === t.key && <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-t-full bg-[#191f28]" />}
           </button>
         ))}
       </div>

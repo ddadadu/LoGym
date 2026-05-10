@@ -244,6 +244,27 @@ export default function WorkoutPage() {
     }
   };
 
+  const handleDeleteSession = async (logId) => {
+    if (!window.confirm('이 운동 세션 기록을 정말 삭제하시겠습니까? 복구할 수 없습니다.')) return;
+    try {
+      const { error } = await supabase
+        .from('workout_logs')
+        .delete()
+        .eq('id', logId);
+
+      if (error) throw error;
+
+      // 로컬 상태 업데이트 및 캘린더 점 표시 갱신
+      setSelectedWorkoutDetails(prev => prev.filter(d => d.id !== logId));
+      if (currentUser) {
+        fetchAttendance(currentUser);
+      }
+    } catch (err) {
+      alert('삭제 중 오류가 발생했습니다.');
+      console.error(err);
+    }
+  };
+
   // --- 통합 기록 완료 처리 (팝업 띄우기) ---
   const handleFinishWorkout = async () => {
     if (activeExercises.length === 0) {
@@ -389,7 +410,7 @@ export default function WorkoutPage() {
         <div className="sticky top-0 z-30 bg-white shadow-sm px-5 py-3 border-b border-[#e5e8eb] flex items-center justify-between">
           <div>
             <h2 className="text-[20px] font-extrabold tracking-tight text-[#191f28]">
-              {isWorkoutActive ? '진행 중인 운동' : '운동상황'}
+              {isWorkoutActive ? '운동 진행 중' : '운동상황'}
             </h2>
             {!isWorkoutActive && <p className="text-[13px] font-medium text-[#8b95a1] mt-0.5">나의 노력과 변화를 확인하세요</p>}
           </div>
@@ -591,57 +612,67 @@ export default function WorkoutPage() {
                       )}
                       {(selectedWorkoutDetails.length === 1 || expandedSessions[detail.id]) && (
                         <>
-                        <div className="flex gap-4 items-center">
-                          <div className="w-24 h-24 shrink-0 rounded-2xl bg-[#f2f4f6] overflow-hidden border border-[#e5e8eb]">
-                            {detail.photo_url ? (
-                              <img src={detail.photo_url} alt="인증샷" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[#d1d6db]"><Dumbbell className="w-8 h-8" /></div>
-                            )}
-                          </div>
-                          <div className="flex flex-col justify-center">
-                            <div className="flex items-center gap-2 flex-wrap mb-2">
-                              <div className="text-[13px] font-bold text-[#3182f6] bg-[#e8f3ff] px-2 py-1 rounded-lg">
-                                ⏱️ {Math.floor(detail.duration_seconds / 60)}분 {detail.duration_seconds % 60}초
-                              </div>
-                              {detail.start_time && (
-                                <div className="text-[12px] font-bold text-[#4e5968] bg-[#f2f4f6] px-2 py-1 rounded-lg">
-                                  {new Date(detail.start_time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                                  {detail.end_time && ` ~ ${new Date(detail.end_time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`}
-                                </div>
+                          <div className="flex gap-4 items-center">
+                            <div className="w-24 h-24 shrink-0 rounded-2xl bg-[#f2f4f6] overflow-hidden border border-[#e5e8eb]">
+                              {detail.photo_url ? (
+                                <img src={detail.photo_url} alt="인증샷" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[#d1d6db]"><Dumbbell className="w-8 h-8" /></div>
                               )}
                             </div>
-                            <p className="text-[15px] font-extrabold text-[#191f28]">총 {detail.workout_log_items?.length || 0}종목 진행</p>
-                          </div>
-                        </div>
-
-                        <div className="mt-2 space-y-2">
-                          {detail.workout_log_items?.map((item, idx) => {
-                            const exName = item.equipments?.name || item.user_custom_exercises?.name || '커스텀 종목';
-                            const setTotal = item.sets?.length || 0;
-                            let maxWeight = 0, totalReps = 0;
-                            if (Array.isArray(item.sets)) {
-                              item.sets.forEach(s => {
-                                if (s.done) {
-                                  if (parseFloat(s.weight) > maxWeight) maxWeight = parseFloat(s.weight);
-                                  totalReps += parseInt(s.reps || 0);
-                                }
-                              });
-                            }
-                            return (
-                              <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-[#f9fafb] border border-[#f2f4f6]">
-                                <div>
-                                  <p className="text-[14px] font-bold text-[#191f28]">{exName}</p>
-                                  <p className="text-[12px] font-medium text-[#8b95a1]">{setTotal}세트 · 총 {totalReps}회</p>
+                            <div className="flex flex-col justify-center">
+                              <div className="flex items-center gap-2 flex-wrap mb-2">
+                                <div className="text-[13px] font-bold text-[#3182f6] bg-[#e8f3ff] px-2 py-1 rounded-lg">
+                                  ⏱️ {Math.floor(detail.duration_seconds / 60)}분 {detail.duration_seconds % 60}초
                                 </div>
-                                <div className="text-right">
-                                  <span className="text-[11px] font-bold text-[#b0b8c1]">MAX</span>
-                                  <p className="text-[15px] font-extrabold text-[#3182f6]">{maxWeight}kg</p>
-                                </div>
+                                {detail.start_time && (
+                                  <div className="text-[12px] font-bold text-[#4e5968] bg-[#f2f4f6] px-2 py-1 rounded-lg">
+                                    {new Date(detail.start_time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                                    {detail.end_time && ` ~ ${new Date(detail.end_time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`}
+                                  </div>
+                                )}
                               </div>
-                            )
-                          })}
-                        </div>
+                              <p className="text-[15px] font-extrabold text-[#191f28]">총 {detail.workout_log_items?.length || 0}종목 진행</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-2 space-y-2">
+                            {detail.workout_log_items?.map((item, idx) => {
+                              const exName = item.equipments?.name || item.user_custom_exercises?.name || '커스텀 종목';
+                              const setTotal = item.sets?.length || 0;
+                              let maxWeight = 0, totalReps = 0;
+                              if (Array.isArray(item.sets)) {
+                                item.sets.forEach(s => {
+                                  if (s.done) {
+                                    if (parseFloat(s.weight) > maxWeight) maxWeight = parseFloat(s.weight);
+                                    totalReps += parseInt(s.reps || 0);
+                                  }
+                                });
+                              }
+                              return (
+                                <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-[#f9fafb] border border-[#f2f4f6]">
+                                  <div>
+                                    <p className="text-[14px] font-bold text-[#191f28]">{exName}</p>
+                                    <p className="text-[12px] font-medium text-[#8b95a1]">{setTotal}세트 · 총 {totalReps}회</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-[11px] font-bold text-[#b0b8c1]">MAX</span>
+                                    <p className="text-[15px] font-extrabold text-[#3182f6]">{maxWeight}kg</p>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+
+                          <div className="mt-4 flex justify-end border-t border-[#f2f4f6] pt-3">
+                            <button
+                              onClick={() => handleDeleteSession(detail.id)}
+                              className="flex items-center gap-1.5 text-[13px] font-bold text-[#f04452] active:bg-[#fff0f0] px-2 py-1 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              기록 삭제
+                            </button>
+                          </div>
                         </>
                       )}
                     </div>

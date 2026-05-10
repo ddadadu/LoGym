@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { ChevronLeft, Dumbbell, MapPin, Clock, UserCheck, ClipboardList, CheckCircle2, XCircle, AlertCircle, Phone, CheckSquare, RefreshCw, ChevronDown } from 'lucide-react';
+import { ChevronLeft, Dumbbell, MapPin, Clock, UserCheck, ClipboardList, CheckCircle2, XCircle, AlertCircle, Phone, CheckSquare, RefreshCw, ChevronDown, User } from 'lucide-react';
 import BrandSelectorModal from '../components/BrandSelectorModal';
+
+const CATEGORIES = ['전체', '유산소', '웨이트', '머신'];
 
 const CONDITION_LABELS = {
   excellent: { label: '양호', color: '#00c471', bg: '#e8faf0' },
   good: { label: '보통', color: '#f59e0b', bg: '#fef3c7' },
-  maintenance: { label: '점검필요', color: '#f04452', bg: '#fef2f2' },
+  maintenance: { label: '수리 중', color: '#f04452', bg: '#fef2f2' },
 };
 const TRAINER_FALLBACK = "https://images.unsplash.com/photo-1750698545009-679820502908?auto=format&fit=crop&q=80&w=150&h=150";
 
@@ -22,6 +24,7 @@ export default function MyGymDetailPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [tab, setTab] = useState('equipment'); // equipment, trainer, request
+  const [selectedCategory, setSelectedCategory] = useState('전체');
 
   // 제보 모달
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -54,7 +57,10 @@ export default function MyGymDetailPage() {
     setGymData(gData);
 
     // 2. Equipments
-    const { data: eqData } = await supabase.from('gym_equipments').select('*, equipments(name, category)').eq('gym_id', hId);
+    const { data: eqData } = await supabase
+      .from('gym_equipments')
+      .select('*, equipments(name, category), equipment_brands(name_ko, logo_url)')
+      .eq('gym_id', hId);
     if (eqData) {
       setEquipments(eqData.map(item => ({
         id: item.equipment_id,
@@ -62,7 +68,8 @@ export default function MyGymDetailPage() {
         name: item.equipments?.name || '알 수 없음',
         quantity: item.quantity || 1,
         condition: item.condition || 'good',
-        brand: item.brand || '',
+        brand: item.equipment_brands ? item.equipment_brands.name_ko : (item.custom_brand_name || ''),
+        brandLogo: item.equipment_brands?.logo_url || null
       })));
     }
 
@@ -265,30 +272,69 @@ export default function MyGymDetailPage() {
               </button>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden border border-[#e5e8eb]/50">
-              {equipments.map((eq, idx) => {
-                const cond = CONDITION_LABELS[eq.condition] || CONDITION_LABELS.good;
-                return (
-                  <div key={eq.id} className={`flex items-center gap-3 px-4 py-3.5 ${idx < equipments.length - 1 ? 'border-b border-[#f7f8fa]' : ''}`}>
-                    <div className="w-10 h-10 rounded-xl bg-[#ebf4ff] flex items-center justify-center flex-shrink-0">
-                      <Dumbbell className="w-5 h-5 text-[#3182f6]" strokeWidth={2} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[15px] text-[#191f28] truncate" style={{ fontWeight: 600 }}>{eq.name}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" style={{ color: cond.color, backgroundColor: cond.bg, fontWeight: 700 }}>
-                          {cond.label}
-                        </span>
-                      </div>
-                      <p className="text-[12px] text-[#8b95a1] truncate">{eq.quantity}대 보유 {eq.brand ? `· ${eq.brand}` : ''}</p>
-                    </div>
-                  </div>
-                )
-              })}
-              {equipments.length === 0 && (
-                <div className="py-12 text-center text-[#8b95a1] text-[13px]">등록된 기구 정보가 없습니다.</div>
-              )}
+            {/* Category Selector */}
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[13px] transition-colors ${selectedCategory === cat
+                      ? 'bg-[#191f28] text-white'
+                      : 'bg-white text-[#4e5968] border border-[#e5e8eb]'
+                    }`}
+                  style={{ fontWeight: selectedCategory === cat ? 600 : 400 }}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
+
+            {['유산소', '웨이트', '머신', '기타'].map((cat) => {
+              const filteredBySelection = equipments.filter(e => selectedCategory === '전체' || e.category === selectedCategory);
+              const items = filteredBySelection.filter(e => e.category === cat);
+              if (items.length === 0) return null;
+              return (
+                <div key={cat} className="mb-5">
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <span className="text-[12px] text-[#8b95a1] font-bold">{cat}</span>
+                    <span className="text-[11px] text-[#c2c9d2] font-medium">{items.length}종</span>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden border border-[#e5e8eb]/50">
+                    {items.map((eq, idx) => {
+                      const cond = CONDITION_LABELS[eq.condition] || CONDITION_LABELS.good;
+                      return (
+                        <div key={eq.id} className={`flex items-center gap-3 px-4 py-3.5 ${idx < items.length - 1 ? 'border-b border-[#f7f8fa]' : ''}`}>
+                          <div className="w-10 h-10 rounded-xl bg-[#ebf4ff] flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {eq.brandLogo ? (
+                              <img src={eq.brandLogo} alt="brand" className="w-full h-full object-cover" />
+                            ) : (
+                              <Dumbbell className="w-5 h-5 text-[#3182f6]" strokeWidth={2} />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-[15px] text-[#191f28] truncate" style={{ fontWeight: 600 }}>{eq.name}</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" style={{ color: cond.color, backgroundColor: cond.bg, fontWeight: 700 }}>
+                                {cond.label}
+                              </span>
+                            </div>
+                            <p className="text-[12px] text-[#8b95a1] truncate">{eq.quantity}대 보유 {eq.brand ? `· ${eq.brand}` : ''}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {equipments.length === 0 && (
+              <div className="py-12 text-center text-[#8b95a1] text-[13px]">등록된 기구 정보가 없습니다.</div>
+            )}
+
+            {equipments.length > 0 && equipments.filter(e => selectedCategory === '전체' || e.category === selectedCategory).length === 0 && (
+              <div className="py-12 text-center text-[#8b95a1] text-[13px]">선택한 카테고리에 해당하는 기구가 없습니다.</div>
+            )}
           </div>
         )}
 
@@ -302,8 +348,12 @@ export default function MyGymDetailPage() {
             {trainers.map(trainer => (
               <div key={trainer.id} className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-4 border border-[#e5e8eb]/50">
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                    <img src={trainer.profile_image || TRAINER_FALLBACK} alt="trainer" className="w-full h-full object-cover" />
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-[#f2f4f6] flex items-center justify-center flex-shrink-0">
+                    {trainer.profile_image ? (
+                      <img src={trainer.profile_image} alt="trainer" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-8 h-8 text-[#d1d6db]" />
+                    )}
                   </div>
                   <div className="flex-1">
                     <h3 className="text-[16px] text-[#191f28] leading-tight" style={{ fontWeight: 800 }}>{trainer.name || '이름 없음'}</h3>
