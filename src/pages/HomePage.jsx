@@ -39,7 +39,7 @@ export default function HomePage() {
       // 1. 유저 프로필(체중, 목표치) 가져오기
       const { data: profile } = await supabase
         .from('users')
-        .select('weight, daily_goal_minutes, weekly_goal_minutes, weekly_goal_count')
+        .select('full_name, weight, daily_goal_minutes, weekly_goal_minutes, weekly_goal_count')
         .eq('id', user.id)
         .single();
 
@@ -158,7 +158,8 @@ export default function HomePage() {
         thisMonthCount: monthLogs.length, // 세션 기준 카운트 (옵션 B)
         todayMinutes: todayMins,
         todayCalories: todayCals,
-        userWeight: weight
+        userWeight: weight,
+        userName: profile?.full_name
       });
 
     } catch (err) {
@@ -235,7 +236,7 @@ export default function HomePage() {
               {new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' })}
             </p>
             <h1 className="text-[26px] tracking-[-0.04em] text-[#191f28]" style={{ fontWeight: 700 }}>
-              {currentUser?.user_metadata?.name || '회원'}님, 오늘도 화이팅!
+              {dashboardData.userName || currentUser?.user_metadata?.name || '회원'}님, 오늘도 화이팅!
             </h1>
           </div>
 

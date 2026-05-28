@@ -11,6 +11,9 @@ import WorkoutFinishModal from './workout/WorkoutFinishModal';
 import MuscleMap from '../components/workout/MuscleMap';
 import { supabase } from '../supabaseClient';
 import { useLocation } from 'react-router-dom';
+import { TARGET_OPTIONS } from '../constants/exerciseMuscleMap';
+import { calcSessionMuscleVolume } from '../utils/muscleVolumeCalculator';
+import { buildHeatmapData } from '../utils/muscleColorMapper';
 
 export default function WorkoutPage() {
   const location = useLocation();
@@ -28,7 +31,10 @@ export default function WorkoutPage() {
   // 운동 상태
   const [isWorkoutActive, setIsWorkoutActive] = useState(false);
   const [activeExercises, setActiveExercises] = useState([]);
-  // 구조: [{ id, name, isCustom, category, sets: [{ setIdx: 1, weight: '', reps: '', done: false }] }]
+  // 구조: [{ id, name, isCustom, category, customTarget, sets: [{ setIdx: 1, weight: '', reps: '', done: false }] }]
+
+  const [maxVolumeMap, setMaxVolumeMap] = useState({});
+  const [showColdStartTooltip, setShowColdStartTooltip] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFinishModalOpen, setIsFinishModalOpen] = useState(false);
@@ -155,6 +161,23 @@ export default function WorkoutPage() {
 
   const weightData = processWeightData();
 
+  const fetchMaxVolumes = async (user) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_muscle_max_volume')
+        .select('muscle_group, max_volume')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      const map = {};
+      data?.forEach(row => {
+        map[row.muscle_group] = row.max_volume;
+      });
+      setMaxVolumeMap(map);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
@@ -162,6 +185,7 @@ export default function WorkoutPage() {
         fetchAttendance(user);
         fetchWorkoutDetail(selectedDate, user);
         fetchWeightLogs(user);
+        fetchMaxVolumes(user);
       }
     });
   }, []);
@@ -195,9 +219,14 @@ export default function WorkoutPage() {
       .filter(newItem => !activeExercises.some(ex => ex.id === newItem.id)) // 중복 추가 방지
       .map(item => ({
         ...item,
+        customTarget: TARGET_OPTIONS[item.sub_category] ? TARGET_OPTIONS[item.sub_category][0].id : item.sub_category,
         sets: [{ setIdx: 1, weight: '', reps: '', done: false }]
       }));
     setActiveExercises(prev => [...prev, ...newEx]);
+  };
+
+  const handleUpdateExerciseTarget = (exIndex, targetId) => {
+    setActiveExercises(prev => prev.map((ex, i) => i === exIndex ? { ...ex, customTarget: targetId } : ex));
   };
 
   const handleAddSet = (exIndex) => {
@@ -380,6 +409,26 @@ export default function WorkoutPage() {
       const { error: itemsError } = await supabase.from('workout_log_items').insert(itemsPayload);
       if (itemsError) throw itemsError;
 
+      // 4. 세션 종료 시 근육별 최대 볼륨 갱신 (UPSERT)
+      const sessionVolume = calcSessionMuscleVolume(activeExercises);
+      const upsertPayload = Object.entries(sessionVolume).map(([muscle, vol]) => ({
+        user_id: user.id,
+        muscle_group: muscle,
+        max_volume: vol
+      }));
+
+      if (upsertPayload.length > 0) {
+        const toUpdate = upsertPayload.filter(row => (row.max_volume > (maxVolumeMap[row.muscle_group] || 0)));
+        if (toUpdate.length > 0) {
+          await supabase.from('user_muscle_max_volume').upsert(toUpdate, { onConflict: 'user_id, muscle_group' });
+          setMaxVolumeMap(prev => {
+            const next = { ...prev };
+            toUpdate.forEach(r => next[r.muscle_group] = r.max_volume);
+            return next;
+          });
+        }
+      }
+
       alert('오운완 성공! 🎉 메인 뷰/달력 업데이트는 다음 작업에서 적용됩니다.');
 
       setIsFinishModalOpen(false);
@@ -450,7 +499,29 @@ export default function WorkoutPage() {
           <div className="p-4 space-y-4 animate-in fade-in slide-in-from-bottom-2">
 
             {/* 근육 자극 맵 (신규) */}
-            <MuscleMap targetMuscles={activeExercises.map(ex => ex.category).filter((v, i, a) => a.indexOf(v) === i)} />
+            {(() => {
+              const sessionVolume = calcSessionMuscleVolume(activeExercises);
+              const { data: heatmapData, coldStartMuscles } = buildHeatmapData(sessionVolume, maxVolumeMap);
+              const hasColdStart = coldStartMuscles.length > 0;
+              return (
+                <div className="relative">
+                  <MuscleMap heatmapData={heatmapData} />
+                  {hasColdStart && (
+                    <button
+                      onClick={() => setShowColdStartTooltip(!showColdStartTooltip)}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#f2f4f6] text-[#4e5968] font-bold text-xs flex items-center justify-center border border-[#d1d6db]"
+                    >
+                      ?
+                    </button>
+                  )}
+                  {showColdStartTooltip && (
+                    <div className="absolute top-10 right-2 w-48 p-2 bg-[#191f28] text-white text-[11px] rounded-lg shadow-lg z-10 text-left">
+                      이 히트맵은 이전 기록을 기반으로 활성도를 시각화합니다. 아직 최대 볼륨 데이터가 없는 부위(회색)는 다음 운동부터 반영됩니다.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="space-y-4">
               {activeExercises.map((ex, exIdx) => (
@@ -470,6 +541,20 @@ export default function WorkoutPage() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
+                  
+                  {TARGET_OPTIONS[ex.sub_category] && (
+                    <div className="px-4 py-2 bg-white flex gap-2 overflow-x-auto border-b border-[#f2f4f6] scrollbar-hide">
+                      {TARGET_OPTIONS[ex.sub_category].map(opt => (
+                        <button
+                          key={opt.id}
+                          onClick={() => handleUpdateExerciseTarget(exIdx, opt.id)}
+                          className={`shrink-0 px-3 py-1 text-[12px] font-bold rounded-full transition-colors ${ex.customTarget === opt.id ? 'bg-[#3182f6] text-white shadow-sm' : 'bg-[#f2f4f6] text-[#4e5968] hover:bg-[#e8ebed]'}`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   {/* 세트 테이블 */}
                   <div className="px-4 pt-2 pb-4">

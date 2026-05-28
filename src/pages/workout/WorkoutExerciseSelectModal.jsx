@@ -3,7 +3,7 @@ import { supabase } from '../../supabaseClient';
 import { Search, X, Check, Dumbbell, Tag, Plus } from 'lucide-react';
 
 const CATEGORIES = ['머신', '웨이트', '유산소', '맨몸운동'];
-const SUB_CATEGORIES = ['가슴', '등', '어깨', '팔', '하체', '복근', '전신'];
+const SUB_CATEGORIES = ['가슴', '등', '어깨', '이두', '삼두', '하체', '복근', '전신', '기타'];
 
 export default function WorkoutExerciseSelectModal({ isOpen, onClose, onSelectComplete, userGymId }) {
   const [activeCategory, setActiveCategory] = useState('머신');

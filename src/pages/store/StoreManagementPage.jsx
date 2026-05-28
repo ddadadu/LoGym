@@ -5,7 +5,7 @@ import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Dumbbell, UserCheck, Sett
 import BrandSelectorModal from '../../components/BrandSelectorModal';
 
 const CATEGORIES = ['전체', '머신', '웨이트', '유산소'];
-const SUB_CATEGORIES = ['가슴', '등', '어깨', '팔', '하체', '복근', '전신', '기타'];
+const SUB_CATEGORIES = ['가슴', '등', '어깨', '이두', '삼두', '하체', '복근', '전신', '기타'];
 
 const CONDITION_LABELS = {
   excellent: { label: '양호', color: '#00c471', bg: '#e8faf0' },
