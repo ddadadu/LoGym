@@ -80,7 +80,7 @@ export default function CommunityMyPageTab({ currentUser }) {
       const { count: followersCount } = await supabase
         .from('follows')
         .select('*', { count: 'exact', head: true })
-        .eq('followed_id', currentUser.id);
+        .eq('following_id', currentUser.id);
       
       const { count: followingCount } = await supabase
         .from('follows')

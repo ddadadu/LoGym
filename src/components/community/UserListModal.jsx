@@ -17,12 +17,12 @@ export default function UserListModal({ isOpen, onClose, userId, type, currentUs
   const fetchMyFollowing = async () => {
     const { data } = await supabase
       .from('follows')
-      .select('followed_id')
+      .select('following_id')
       .eq('follower_id', currentUser.id);
-    
+
     if (data) {
       const map = {};
-      data.forEach(f => map[f.followed_id] = true);
+      data.forEach(f => map[f.following_id] = true);
       setFollowingMap(map);
     }
   };
@@ -35,13 +35,13 @@ export default function UserListModal({ isOpen, onClose, userId, type, currentUs
       // 나를 팔로우하는 사람들
       query = supabase
         .from('follows')
-        .select('follower:users(id, username, full_name, gyms(name))')
-        .eq('followed_id', userId);
+        .select('follower:users!follows_follower_id_fkey(id, username, full_name, gyms(name))')
+        .eq('following_id', userId);
     } else {
       // 내가 팔로우하는 사람들
       query = supabase
         .from('follows')
-        .select('followed:users(id, username, full_name, gyms(name))')
+        .select('followed:users!follows_following_id_fkey(id, username, full_name, gyms(name))')
         .eq('follower_id', userId);
     }
 
@@ -56,14 +56,14 @@ export default function UserListModal({ isOpen, onClose, userId, type, currentUs
 
   const toggleFollow = async (targetId) => {
     if (targetId === currentUser.id) return;
-    
+
     const isFollowing = followingMap[targetId];
     setFollowingMap(prev => ({ ...prev, [targetId]: !isFollowing }));
 
     if (isFollowing) {
-      await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('followed_id', targetId);
+      await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', targetId);
     } else {
-      await supabase.from('follows').insert({ follower_id: currentUser.id, followed_id: targetId });
+      await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: targetId });
     }
   };
 
@@ -117,11 +117,10 @@ export default function UserListModal({ isOpen, onClose, userId, type, currentUs
                     {!isMe && (
                       <button
                         onClick={() => toggleFollow(u.id)}
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all active:scale-95 border ${
-                          isFollowing
+                        className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all active:scale-95 border ${isFollowing
                             ? 'bg-[#f2f4f6] text-[#4e5968] border-transparent'
                             : 'bg-[#e8f3ff] text-[#3182f6] border-[#3182f6]/20 hover:bg-[#3182f6] hover:text-white'
-                        }`}
+                          }`}
                       >
                         {isFollowing ? <UserMinus className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
                         {isFollowing ? '언팔로우' : '팔로우'}

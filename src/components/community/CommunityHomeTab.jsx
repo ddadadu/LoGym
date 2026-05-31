@@ -21,8 +21,8 @@ export default function CommunityHomeTab({ currentUser }) {
       let gymUserIds = [];
 
       // 팔로잉 가져오기
-      const { data: follows } = await supabase.from('follows').select('followed_id').eq('follower_id', currentUser.id);
-      if (follows) followingIds = follows.map(f => f.followed_id);
+      const { data: follows } = await supabase.from('follows').select('following_id').eq('follower_id', currentUser.id);
+      if (follows) followingIds = follows.map(f => f.following_id);
 
       // 같은 헬스장 사람 가져오기
       if (currentUser.home_gym_id) {

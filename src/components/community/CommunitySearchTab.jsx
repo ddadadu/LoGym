@@ -18,10 +18,10 @@ export default function CommunitySearchTab({ currentUser }) {
   useEffect(() => {
     // 마운트 시 내가 팔로우하는 전체 목록을 가져와서 Map 구성
     const fetchMyFollowing = async () => {
-      const { data } = await supabase.from('follows').select('followed_id').eq('follower_id', currentUser.id);
+      const { data } = await supabase.from('follows').select('following_id').eq('follower_id', currentUser.id);
       if (data) {
         const map = {};
-        data.forEach(f => map[f.followed_id] = true);
+        data.forEach(f => map[f.following_id] = true);
         setFollowingMap(map);
       }
     };
@@ -54,8 +54,8 @@ export default function CommunitySearchTab({ currentUser }) {
     // 팔로워 수 가져오기
     const { data: followers } = await supabase
       .from('follows')
-      .select('followed_id')
-      .in('followed_id', userIds);
+      .select('following_id')
+      .in('following_id', userIds);
     
     // 팔로잉 수 가져오기
     const { data: following } = await supabase
@@ -67,7 +67,7 @@ export default function CommunitySearchTab({ currentUser }) {
     userIds.forEach(id => newCounts[id] = { followers: 0, following: 0 });
 
     followers?.forEach(f => {
-      if (newCounts[f.followed_id]) newCounts[f.followed_id].followers++;
+      if (newCounts[f.following_id]) newCounts[f.following_id].followers++;
     });
     following?.forEach(f => {
       if (newCounts[f.follower_id]) newCounts[f.follower_id].following++;
@@ -90,10 +90,10 @@ export default function CommunitySearchTab({ currentUser }) {
 
     if (isFollowing) {
       // 언팔로우
-      await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('followed_id', targetId);
+      await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', targetId);
     } else {
       // 팔로우
-      await supabase.from('follows').insert({ follower_id: currentUser.id, followed_id: targetId });
+      await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: targetId });
     }
   };
 
