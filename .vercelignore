@@ -1,0 +1,5 @@
+# 배포 시 제외할 프로젝트 관리 폴더들
+docs/
+database/
+scripts/
+ui_sample/
