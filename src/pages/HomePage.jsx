@@ -252,10 +252,10 @@ export default function HomePage() {
                 <Settings className="w-5 h-5" />
               </button>
 
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
                   <h3 className="text-[17px] text-[#191f28] mb-1" style={{ fontWeight: 600 }}>운동 현황</h3>
-                  <p className="text-[14px] text-[#8b95a1]">
+                  <p className="text-[13px] text-[#8b95a1]">
                     {dashboardData.todayCompleted ? '오늘 운동을 완료했어요!' : '오늘도 꾸준히 달성해봐요'}
                   </p>
                   <div className="mt-4 flex flex-col gap-2">
@@ -269,8 +269,8 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-                <div className="relative">
-                  <svg width="120" height="120" viewBox="0 0 120 120">
+                <div className="relative shrink-0">
+                  <svg className="w-[28vw] max-w-[120px] min-w-[90px] h-auto" viewBox="0 0 120 120">
                     {/* 배경 원 */}
                     <circle cx="60" cy="60" r="54" fill="none" stroke="#f2f4f6" strokeWidth="8" />
 
@@ -313,6 +313,7 @@ export default function HomePage() {
                 </button>
               )}
             </div>
+
 
             {/* Stats - Toss style compact grid */}
             <div className="grid grid-cols-4 gap-3 mt-4">

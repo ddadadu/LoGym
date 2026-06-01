@@ -655,22 +655,27 @@ export default function WorkoutPage() {
             </button>
 
             {/* 캘린더 (출석) */}
-            <div className="rounded-[24px] border border-[#e5e8eb] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col items-center">
+            <div className="rounded-[24px] border border-[#e5e8eb] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col items-center overflow-hidden">
               <h3 className="w-full text-left text-lg font-bold text-[#191f28] mb-2 pl-2">출석 달력</h3>
               <style>{`
-                .rdp { --rdp-cell-size: 40px; --rdp-accent-color: #3182f6; --rdp-background-color: #e8f3ff; margin: 0; }
+                .rdp { --rdp-cell-size: 36px; --rdp-accent-color: #3182f6; --rdp-background-color: #e8f3ff; margin: 0; width: 100%; max-width: 100%; }
+                .rdp-month { width: 100%; }
+                .rdp-table { width: 100%; max-width: 100%; }
                 .rdp-day_selected, .rdp-day_selected:focus-visible, .rdp-day_selected:hover { background-color: #3182f6; color: white; }
+                .rdp-caption { padding: 0 4px; }
               `}</style>
-              <DayPicker
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                locale={ko}
-                modifiers={{ attended: attendedDays }}
-                modifiersStyles={{
-                  attended: { fontWeight: 'bold', backgroundColor: '#e8f3ff', color: '#3182f6', borderRadius: '100%' }
-                }}
-              />
+              <div className="w-full overflow-x-auto">
+                <DayPicker
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  locale={ko}
+                  modifiers={{ attended: attendedDays }}
+                  modifiersStyles={{
+                    attended: { fontWeight: 'bold', backgroundColor: '#e8f3ff', color: '#3182f6', borderRadius: '100%' }
+                  }}
+                />
+              </div>
             </div>
 
             {/* 선택된 날짜의 운동 브리핑 카드 */}
