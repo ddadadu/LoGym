@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
+import { sendNotification } from '../../utils/pushNotification';
 import { X, User, UserPlus, UserMinus } from 'lucide-react';
 
 export default function UserListModal({ isOpen, onClose, userId, type, currentUser }) {
@@ -64,6 +65,14 @@ export default function UserListModal({ isOpen, onClose, userId, type, currentUs
       await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', targetId);
     } else {
       await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: targetId });
+      // 팔로우 알림 발송
+      const actorName = currentUser.full_name || currentUser.user_metadata?.name || '누군가';
+      sendNotification({
+        userId: targetId,
+        actorId: currentUser.id,
+        type: 'follow',
+        message: `${actorName}님이 회원님을 팔로우하기 시작했습니다.`,
+      });
     }
   };
 

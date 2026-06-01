@@ -9,6 +9,14 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      strategies: 'generateSW',
+      injectManifest: {
+        swSrc: 'public/sw-push.js',
+      },
+      workbox: {
+        importScripts: ['/sw-push.js'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+      },
       manifest: {
         name: 'LoGym - 피트니스 커뮤니티',
         short_name: 'LoGym',

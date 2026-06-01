@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
+import { sendNotification } from '../../utils/pushNotification';
 import { Dumbbell, MessageSquare, Heart, Clock, Send } from 'lucide-react';
 
 export default function CommunityHomeTab({ currentUser }) {
@@ -94,6 +95,18 @@ export default function CommunityHomeTab({ currentUser }) {
       await supabase.from('community_feed_likes').delete().eq('feed_id', feedId).eq('user_id', currentUser.id);
     } else {
       await supabase.from('community_feed_likes').insert({ feed_id: feedId, user_id: currentUser.id });
+      // 피드 작성자에게 좋아요 알림 발송
+      const feed = feeds.find(f => f.id === feedId);
+      if (feed && feed.user_id !== currentUser.id) {
+        const actorName = currentUser.full_name || currentUser.user_metadata?.name || '누군가';
+        sendNotification({
+          userId: feed.user_id,
+          actorId: currentUser.id,
+          type: 'like',
+          message: `${actorName}님이 회원님의 게시물에 좋아요를 눌렀습니다.`,
+          feedId,
+        });
+      }
     }
   };
 
@@ -123,7 +136,18 @@ export default function CommunityHomeTab({ currentUser }) {
       user_id: currentUser.id,
       content: text
     });
-    // 재조회 대신 낙관적 UI 유지
+    // 피드 작성자에게 댓글 알림 발송
+    const feed = feeds.find(f => f.id === feedId);
+    if (feed && feed.user_id !== currentUser.id) {
+      const actorName = currentUser.full_name || currentUser.user_metadata?.name || '누군가';
+      sendNotification({
+        userId: feed.user_id,
+        actorId: currentUser.id,
+        type: 'comment',
+        message: `${actorName}님이 댓글을 남겼습니다: "${text.length > 20 ? text.slice(0, 20) + '...' : text}"`,
+        feedId,
+      });
+    }
   };
 
   return (

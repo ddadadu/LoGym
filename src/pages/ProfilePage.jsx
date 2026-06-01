@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { subscribeToPush } from '../utils/pushNotification';
 import { 
   Bell, Shield, LogOut, User, Ruler, Target, Settings, ChevronRight, 
   CheckCircle2, AlertCircle, XCircle 
 } from 'lucide-react';
+
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -24,8 +26,13 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
-  // 알림 토글
-  const [notifications, setNotifications] = useState({ workout: true });
+  // 알림 설정 (DB 연동)
+  const [notifSettings, setNotifSettings] = useState({
+    notify_likes: true,
+    notify_comments: true,
+    notify_follows: true,
+  });
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
   
   // 모달 제어용 상태
   const [showEditModal, setShowEditModal] = useState(false);
@@ -54,6 +61,19 @@ export default function ProfilePage() {
           weight: userData.weight || '',
           target_weight: userData.target_weight || '',
         });
+      }
+
+      // 알림 설정 불러오기
+      const { data: ns } = await supabase
+        .from('notification_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (ns) setNotifSettings({ notify_likes: ns.notify_likes, notify_comments: ns.notify_comments, notify_follows: ns.notify_follows });
+
+      // 현재 push 권한 상태 확인
+      if ('Notification' in window) {
+        setIsPushEnabled(Notification.permission === 'granted');
       }
     } catch (err) {
       console.error(err);
@@ -131,6 +151,23 @@ export default function ProfilePage() {
       setShowEditModal(false);
       fetchProfile(); // 뷰 새로고침
     }
+  };
+
+  const handleNotifToggle = async (key) => {
+    const newVal = !notifSettings[key];
+    setNotifSettings(prev => ({ ...prev, [key]: newVal }));
+    if (!authUser) return;
+    await supabase.from('notification_settings').upsert(
+      { user_id: authUser.id, ...notifSettings, [key]: newVal },
+      { onConflict: 'user_id' }
+    );
+  };
+
+  const handleEnablePush = async () => {
+    if (!authUser) return;
+    const ok = await subscribeToPush(authUser.id);
+    setIsPushEnabled(ok);
+    if (!ok) alert('알림 권한이 거부되었습니다. 브라우저 설정에서 알림을 허용해주세요.');
   };
 
   const handleLogout = async () => {
@@ -219,33 +256,48 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 알림 설정 리스트 */}
-        <div className="bg-white rounded-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[#e5e8eb]">
-          <div className="flex items-center gap-2 px-5 pt-5 pb-2">
+        {/* 알림 설정 카드 */}
+        <div className="bg-white rounded-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] border border-[#e5e8eb] overflow-hidden">
+          <div className="flex items-center gap-2 px-5 pt-5 pb-3">
             <Bell className="w-[18px] h-[18px] text-[#8b95a1]" />
-            <h3 className="text-[16px] font-bold text-[#191f28]">앱 설정</h3>
+            <h3 className="text-[16px] font-bold text-[#191f28]">알림 설정</h3>
           </div>
-          
-          <div className="flex items-center justify-between px-5 py-4 border-t border-[#f2f4f6] mx-1 mt-2">
-            <div>
-              <p className="text-[15px] font-bold text-[#191f28]">운동 시간 알림</p>
-              <p className="text-[12px] text-[#8b95a1] mt-0.5">매일 설정된 시간에 푸시 알림 받기</p>
+
+          {/* 푸시 알림 활성화 버튼 */}
+          {!isPushEnabled && (
+            <div className="mx-5 mb-3 p-3 bg-[#fffbeb] border border-[#fde68a] rounded-xl flex items-center justify-between gap-3">
+              <p className="text-[12px] font-medium text-[#92400e]">알림을 받으려면 브라우저 권한이 필요해요.</p>
+              <button
+                onClick={handleEnablePush}
+                className="shrink-0 px-3 py-1.5 bg-[#f59e0b] text-white text-[12px] font-bold rounded-lg active:scale-95"
+              >
+                알림 허용
+              </button>
             </div>
-            
-            {/* Toss style toggle */}
-            <button
-              onClick={() => setNotifications({ ...notifications, workout: !notifications.workout })}
-              className={`w-12 h-7 rounded-full p-[3px] transition-colors duration-200 ${
-                notifications.workout ? 'bg-[#3182f6]' : 'bg-[#e5e8eb]'
-              }`}
-            >
-              <div
-                className={`w-[22px] h-[22px] bg-white rounded-full shadow-sm transition-transform duration-200 ${
-                  notifications.workout ? 'translate-x-[22px]' : 'translate-x-0'
+          )}
+
+          {[
+            { key: 'notify_follows', label: '팔로워 추가 알림', desc: '누군가 나를 팔로우하면 알림' },
+            { key: 'notify_likes',   label: '좋아요 알림',      desc: '내 피드에 좋아요가 달리면 알림' },
+            { key: 'notify_comments',label: '댓글 알림',        desc: '내 피드에 댓글이 달리면 알림' },
+          ].map(({ key, label, desc }, idx, arr) => (
+            <div key={key} className={`flex items-center justify-between px-5 py-4 ${idx < arr.length - 1 ? 'border-b border-[#f2f4f6]' : ''}`}>
+              <div>
+                <p className="text-[15px] font-bold text-[#191f28]">{label}</p>
+                <p className="text-[12px] text-[#8b95a1] mt-0.5">{desc}</p>
+              </div>
+              <button
+                onClick={() => handleNotifToggle(key)}
+                className={`w-12 h-7 rounded-full p-[3px] transition-colors duration-200 ${
+                  notifSettings[key] ? 'bg-[#3182f6]' : 'bg-[#e5e8eb]'
                 }`}
-              />
-            </button>
-          </div>
+              >
+                <div className={`w-[22px] h-[22px] bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                  notifSettings[key] ? 'translate-x-[22px]' : 'translate-x-0'
+                }`} />
+              </button>
+            </div>
+          ))}
         </div>
 
         {/* 계정 관리 액션 */}
