@@ -139,8 +139,8 @@ export default function StoreLayout() {
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-1px_0_0_#e5e8eb]">
-        <div className="flex justify-around items-center h-[60px] max-w-lg mx-auto px-2">
+      <nav className="lg:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white z-50 shadow-[0_-1px_0_0_#e5e8eb]">
+        <div className="flex justify-around items-center h-[60px] w-full px-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
