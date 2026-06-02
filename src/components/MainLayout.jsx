@@ -16,7 +16,7 @@ export default function MainLayout() {
   return (
     <div className="flex h-[100dvh] flex-col bg-gray-50 font-sans text-gray-900 pb-[env(safe-area-inset-bottom)] overflow-hidden">
       {/* App Bar Placeholder */}
-      <header className="flex h-14 items-center justify-between bg-white shadow-sm shrink-0 z-10 relative px-4">
+      <header className="flex h-14 items-center justify-between bg-white shadow-sm shrink-0 z-50 relative px-4">
         <h1 className="text-xl font-bold text-gray-800">LoGym</h1>
         <NotificationBell userId={userId} />
       </header>

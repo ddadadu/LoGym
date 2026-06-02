@@ -153,7 +153,7 @@ export default function AdminDashboardPage() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden max-h-[100dvh]">
         {/* Mobile Header */}
-        <header className="md:hidden flex h-14 items-center justify-between bg-[#191f28] text-white px-4 shrink-0">
+        <header className="md:hidden flex h-14 items-center justify-between bg-[#191f28] text-white px-4 shrink-0 z-50 relative">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-[#3182f6]" />
             <h1 className="text-[15px] font-bold">LoGym Admin</h1>
