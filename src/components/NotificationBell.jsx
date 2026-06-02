@@ -37,6 +37,12 @@ export default function NotificationBell({ userId }) {
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   };
 
+  const deleteNotification = async (e, id) => {
+    e.stopPropagation(); // prevent panel close or click event
+    await supabase.from('notifications').delete().eq('id', id);
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
   // 실시간 구독
   useEffect(() => {
     if (!userId) return;
@@ -124,13 +130,22 @@ export default function NotificationBell({ userId }) {
                     <div className={`w-9 h-9 rounded-full ${config.bg} flex items-center justify-center shrink-0 mt-0.5`}>
                       <Icon className={`w-[18px] h-[18px] ${config.color}`} />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-2">
                       <p className="text-[13px] font-medium text-[#191f28] leading-snug">{n.message}</p>
                       <p className="text-[11px] text-[#8b95a1] mt-0.5">{formatTime(n.created_at)}</p>
                     </div>
-                    {!n.is_read && (
-                      <span className="w-2 h-2 rounded-full bg-[#3182f6] shrink-0 mt-1.5" />
-                    )}
+                    <div className="flex flex-col items-end gap-1 shrink-0 mt-0.5">
+                      <button 
+                        onClick={(e) => deleteNotification(e, n.id)} 
+                        className="p-1 text-[#d1d6db] hover:text-[#f04452] transition-colors rounded-full hover:bg-white"
+                        title="알림 지우기"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                      {!n.is_read && (
+                        <span className="w-2 h-2 rounded-full bg-[#3182f6] mr-1" />
+                      )}
+                    </div>
                   </div>
                 );
               })

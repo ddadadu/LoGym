@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { ShieldCheck, LogOut, CheckCircle2, XCircle, FileText, ChevronRight, AlertTriangle } from 'lucide-react';
+import NotificationBell from '../../components/NotificationBell';
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export default function AdminDashboardPage() {
   const [selectedReq, setSelectedReq] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [adminUserId, setAdminUserId] = useState(null);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -23,6 +25,7 @@ export default function AdminDashboardPage() {
         navigate('/admin/login', { replace: true });
         return;
       }
+      setAdminUserId(user.id);
 
       const { data, error } = await supabase
         .from('store_managers')
@@ -120,13 +123,18 @@ export default function AdminDashboardPage() {
       
       {/* Sidebar (Desktop) */}
       <aside className="hidden md:flex w-[280px] bg-[#191f28] flex-col text-white">
-        <div className="p-6 flex items-center gap-3 border-b border-white/10">
-          <div className="w-10 h-10 bg-[#3182f6] rounded-xl flex items-center justify-center shadow-lg shadow-[#3182f6]/30">
-            <ShieldCheck className="w-5 h-5 text-white" />
+        <div className="p-6 flex items-center justify-between border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#3182f6] rounded-xl flex items-center justify-center shadow-lg shadow-[#3182f6]/30">
+              <ShieldCheck className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-extrabold tracking-tight">LoGym Admin</h1>
+              <p className="text-[11px] text-[#8b95a1]">최고 관리자 콘솔</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-extrabold tracking-tight">LoGym Admin</h1>
-            <p className="text-[11px] text-[#8b95a1]">최고 관리자 콘솔</p>
+          <div className="bg-white/10 rounded-full">
+            <NotificationBell userId={adminUserId} />
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-2">
@@ -150,9 +158,14 @@ export default function AdminDashboardPage() {
             <ShieldCheck className="w-5 h-5 text-[#3182f6]" />
             <h1 className="text-[15px] font-bold">LoGym Admin</h1>
           </div>
-          <button onClick={handleLogout} className="text-[#8b95a1] p-1">
-            <LogOut className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="bg-white/10 rounded-full">
+              <NotificationBell userId={adminUserId} />
+            </div>
+            <button onClick={handleLogout} className="text-[#8b95a1] p-1 ml-1">
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col lg:flex-row gap-6">
