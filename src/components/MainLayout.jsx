@@ -22,7 +22,7 @@ export default function MainLayout() {
       </header>
       
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto w-full relative">
+      <main className="flex-1 overflow-y-auto w-full relative min-h-0">
         <div className="px-4 py-4 min-h-full">
           <Outlet />
         </div>

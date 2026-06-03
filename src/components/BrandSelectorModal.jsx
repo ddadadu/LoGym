@@ -64,8 +64,7 @@ export default function BrandSelectorModal({ isOpen, onClose, onSelect }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end bg-[#191f28]/60 transition-opacity">
-      <div className="w-full h-[75vh] bg-white rounded-t-3xl flex flex-col animate-in slide-in-from-bottom-full duration-300">
-
+      <div className="w-full h-[75vh] bg-white rounded-t-3xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-full duration-300">
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[#f2f4f6]">
           <h3 className="text-xl font-extrabold text-[#191f28]">기구 브랜드 선택</h3>
@@ -118,7 +117,7 @@ export default function BrandSelectorModal({ isOpen, onClose, onSelect }) {
             </div>
 
             {/* 리스트업 */}
-            <div className="flex-1 overflow-y-auto px-5 py-2">
+            <div className="flex-1 overflow-y-auto px-5 py-2 min-h-0">
               {isLoading ? (
                 <div className="flex justify-center py-10">
                   <span className="animate-spin w-8 h-8 rounded-full border-2 border-[#3182f6] border-t-transparent" />
