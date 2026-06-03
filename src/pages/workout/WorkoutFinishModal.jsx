@@ -19,7 +19,7 @@ export default function WorkoutFinishModal({ isOpen, onClose, onSubmit, isSubmit
             .select('height, weight')
             .eq('id', user.id)
             .single();
-            
+
           if (data) {
             setMetrics({
               height: data.height || '',
@@ -72,7 +72,7 @@ export default function WorkoutFinishModal({ isOpen, onClose, onSubmit, isSubmit
       >
         <div className="w-12 h-1.5 bg-[#e5e8eb] rounded-full mx-auto mb-6" />
 
-        <button 
+        <button
           onClick={onClose}
           disabled={isSubmitting}
           className="absolute top-5 right-5 p-2 bg-[#f2f4f6] rounded-full text-[#8b95a1] active:scale-95 transition-transform disabled:opacity-50"
@@ -84,7 +84,7 @@ export default function WorkoutFinishModal({ isOpen, onClose, onSubmit, isSubmit
           <div className="w-16 h-16 bg-[#fff0f0] rounded-full flex items-center justify-center mx-auto mb-3">
             <Flame className="w-8 h-8 text-[#f04452]" />
           </div>
-          <h2 className="text-[22px] font-extrabold text-[#191f28]">오운완 기록📸</h2>
+          <h2 className="text-[22px] font-extrabold text-[#191f28]">오운완 기록</h2>
           <p className="mt-1 text-[13px] font-medium text-[#8b95a1]">
             오늘의 신체 변화와 땀방울을 기록해 보세요!
           </p>
@@ -93,20 +93,20 @@ export default function WorkoutFinishModal({ isOpen, onClose, onSubmit, isSubmit
         <div className="mb-6 grid grid-cols-2 gap-4">
           <div className="bg-[#f9fafb] p-4 rounded-2xl border border-[#e5e8eb]">
             <label className="text-[12px] font-bold text-[#8b95a1] mb-1 block">오늘의 체중 (kg)</label>
-            <input 
-              type="number" 
+            <input
+              type="number"
               value={metrics.weight}
-              onChange={e => setMetrics({...metrics, weight: e.target.value})}
+              onChange={e => setMetrics({ ...metrics, weight: e.target.value })}
               placeholder="예: 70"
               className="w-full bg-transparent text-[22px] font-extrabold text-[#191f28] outline-none placeholder-[#d1d6db]"
             />
           </div>
           <div className="bg-[#f9fafb] p-4 rounded-2xl border border-[#e5e8eb]">
             <label className="text-[12px] font-bold text-[#8b95a1] mb-1 block">현재 신장 (cm)</label>
-            <input 
-              type="number" 
+            <input
+              type="number"
               value={metrics.height}
-              onChange={e => setMetrics({...metrics, height: e.target.value})}
+              onChange={e => setMetrics({ ...metrics, height: e.target.value })}
               placeholder="예: 175"
               className="w-full bg-transparent text-[22px] font-extrabold text-[#191f28] outline-none placeholder-[#d1d6db]"
             />
@@ -118,7 +118,7 @@ export default function WorkoutFinishModal({ isOpen, onClose, onSubmit, isSubmit
           {previewUrl ? (
             <>
               <img src={previewUrl} alt="preview" className="w-full h-full object-cover" />
-              <button 
+              <button
                 onClick={handleCancelFile}
                 disabled={isSubmitting}
                 className="absolute top-3 right-3 px-3 py-1.5 bg-black/50 backdrop-blur-md rounded-full text-white text-[12px] font-bold shadow-lg"
@@ -127,7 +127,7 @@ export default function WorkoutFinishModal({ isOpen, onClose, onSubmit, isSubmit
               </button>
             </>
           ) : (
-            <button 
+            <button
               onClick={() => fileInputRef.current?.click()}
               className="w-full h-full flex flex-col items-center justify-center gap-3 text-[#b0b8c1] active:bg-[#f2f4f6] transition-colors"
             >
@@ -138,18 +138,18 @@ export default function WorkoutFinishModal({ isOpen, onClose, onSubmit, isSubmit
             </button>
           )}
           {/* 모바일 브라우저의 경우 accept="image/*"이면 사진앨범 & 카메라 옵션이 모두 뜹니다 */}
-          <input 
-            type="file" 
-            accept="image/*" 
-            ref={fileInputRef} 
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
             onChange={handleFileChange}
-            className="hidden" 
+            className="hidden"
           />
         </div>
 
         {/* 액션 버튼 */}
         <div className="flex flex-col gap-3">
-          <button 
+          <button
             onClick={handleSubmit}
             disabled={isSubmitting}
             className="w-full h-14 rounded-2xl bg-[#3182f6] text-white font-bold text-[16px] shadow-lg shadow-[#3182f6]/30 active:scale-95 transition-transform flex items-center justify-center disabled:opacity-70 disabled:scale-100"
@@ -163,10 +163,10 @@ export default function WorkoutFinishModal({ isOpen, onClose, onSubmit, isSubmit
               selectedFile ? '기록 완료하기' : '사진 앨범 열기'
             )}
           </button>
-          
+
           {/* 사진 없이 건너뛰기 기능 */}
           {!selectedFile && (
-            <button 
+            <button
               onClick={handleSubmit}
               disabled={isSubmitting}
               className="w-full h-12 rounded-xl text-[#8b95a1] font-bold text-[15px] active:bg-[#f2f4f6]"
