@@ -392,17 +392,28 @@ export default function StoreManagementPage() {
                       <ChevronDown className="w-4 h-4 text-[#8b95a1]" />
                     </button>
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <label className="text-[12px] text-[#8b95a1] mb-1 block">상태</label>
-                    <select
-                      value={newEquip.condition}
-                      onChange={(e) => setNewEquip({ ...newEquip, condition: e.target.value })}
-                      className="w-full h-10 bg-[#f2f4f6] rounded-xl px-3 text-[14px] outline-none"
-                    >
-                      <option value="excellent">양호</option>
-                      <option value="good">보통</option>
-                      <option value="maintenance">수리 중</option>
-                    </select>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { value: 'excellent', label: '양호', activeBg: '#00c471' },
+                        { value: 'good', label: '보통', activeBg: '#f59e0b' },
+                        { value: 'maintenance', label: '수리 중', activeBg: '#f04452' },
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setNewEquip({ ...newEquip, condition: opt.value })}
+                          className="h-10 rounded-xl text-[13px] transition-all active:scale-95 border-2"
+                          style={newEquip.condition === opt.value
+                            ? { backgroundColor: opt.activeBg, color: '#fff', borderColor: opt.activeBg, fontWeight: 700 }
+                            : { backgroundColor: '#f2f4f6', color: '#4e5968', borderColor: 'transparent', fontWeight: 500 }
+                          }
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-2">

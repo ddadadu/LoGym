@@ -471,11 +471,26 @@ export default function MyGymDetailPage() {
               </div>
               <div>
                 <label className="text-[13px] text-[#4e5968] font-bold mb-1.5 block">기구 상태 (중요)</label>
-                <select value={reqForm.condition} onChange={e => setReqForm({ ...reqForm, condition: e.target.value })} className="w-full h-12 bg-[#f2f4f6] rounded-xl px-4 text-[15px] outline-none border-2 border-transparent focus:border-[#3182f6] text-[#191f28]">
-                  <option value="good">사용가능/보통</option>
-                  <option value="maintenance">단선·고장 (사용불가)</option>
-                  <option value="excellent">새로 입고됨!</option>
-                </select>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'good', label: '사용가능/보통', color: '#f59e0b', bg: '#fef3c7', activeBg: '#f59e0b' },
+                    { value: 'maintenance', label: '단선·고장', color: '#f04452', bg: '#fef2f2', activeBg: '#f04452' },
+                    { value: 'excellent', label: '새로 입고됨!', color: '#00c471', bg: '#e8faf0', activeBg: '#00c471' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setReqForm({ ...reqForm, condition: opt.value })}
+                      className="h-12 rounded-xl text-[13px] transition-all active:scale-95 border-2"
+                      style={reqForm.condition === opt.value
+                        ? { backgroundColor: opt.activeBg, color: '#fff', borderColor: opt.activeBg, fontWeight: 700 }
+                        : { backgroundColor: '#f2f4f6', color: '#4e5968', borderColor: 'transparent', fontWeight: 500 }
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <label className="text-[13px] text-[#4e5968] font-bold mb-1.5 block">상세 설명 남기기</label>
