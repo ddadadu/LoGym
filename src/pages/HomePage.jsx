@@ -213,12 +213,6 @@ export default function HomePage() {
   const circumference = 2 * Math.PI * r;
   const halfCircumference = circumference / 2;
 
-  // 일일 목표 (왼쪽 반원) - 시계 반대방향/시계방향 회전에 맞춰 조정
-  // 여기서는 단순히 반원 중 얼마나 채울지 계산
-  const dailyOffset = halfCircumference - (dailyProgress / 100) * halfCircumference;
-  // 주간 목표 (오른쪽 반원)
-  const weeklyOffset = halfCircumference - (weeklyProgress / 100) * halfCircumference;
-
   const stats = [
     { icon: Flame, label: '칼로리', value: dashboardData.weeklyCalories, unit: 'kcal', color: '#ff6b35', bg: '#fff4ef' },
     { icon: Target, label: '주간 목표', value: `${dashboardData.weeklyCount}/${dashboardData.weeklyGoalCount}`, unit: '회', color: '#3182f6', bg: '#ebf4ff' },
@@ -271,28 +265,39 @@ export default function HomePage() {
                 </div>
                 <div className="relative shrink-0">
                   <svg className="w-[28vw] max-w-[120px] min-w-[90px] h-auto" viewBox="0 0 120 120">
-                    {/* 배경 원 */}
-                    <circle cx="60" cy="60" r="54" fill="none" stroke="#f2f4f6" strokeWidth="8" />
+                    {/* 배경 반원 - 일일 (좌측) */}
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="#f2f4f6" strokeWidth="8"
+                      strokeDasharray={`${halfCircumference} ${circumference}`}
+                      strokeDashoffset={0}
+                      transform="rotate(90 60 60)"
+                    />
 
-                    {/* 일일 목표 (좌측 반원) */}
+                    {/* 배경 반원 - 주간 (우측) */}
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="#f2f4f6" strokeWidth="8"
+                      strokeDasharray={`${halfCircumference} ${circumference}`}
+                      strokeDashoffset={0}
+                      transform="rotate(-90 60 60)"
+                    />
+
+                    {/* 일일 목표 (좌측 반원) - 위(12시)에서 아래(6시)로 */}
                     <circle
                       cx="60" cy="60" r="54" fill="none"
                       stroke="#3182f6" strokeWidth="8"
                       strokeLinecap="round"
-                      strokeDasharray={`${halfCircumference} ${circumference}`}
-                      strokeDashoffset={dailyOffset + halfCircumference}
-                      transform="rotate(90 60 60)"
+                      strokeDasharray={`${(dailyProgress / 100) * halfCircumference} ${circumference}`}
+                      strokeDashoffset={0}
+                      transform="rotate(-90 60 60)"
                       className="transition-all duration-700"
                     />
 
-                    {/* 주간 목표 (우측 반원) */}
+                    {/* 주간 목표 (우측 반원) - 위(12시)에서 아래(6시)로 */}
                     <circle
                       cx="60" cy="60" r="54" fill="none"
                       stroke="#f59e0b" strokeWidth="8"
                       strokeLinecap="round"
-                      strokeDasharray={`${halfCircumference} ${circumference}`}
-                      strokeDashoffset={weeklyOffset + halfCircumference}
-                      transform="rotate(-90 60 60)"
+                      strokeDasharray={`${(weeklyProgress / 100) * halfCircumference} ${circumference}`}
+                      strokeDashoffset={0}
+                      transform="rotate(90 60 60)"
                       className="transition-all duration-700"
                     />
                   </svg>
